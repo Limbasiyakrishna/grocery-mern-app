@@ -1,0 +1,398 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════
+   DESIGN TOKEN ROOT
+═══════════════════════════════════════════ */
+:root {
+  --primary: #059669;
+  --primary-dark: #047857;
+  --primary-light: #d1fae5;
+  --accent: #0d9488;
+  --surface: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.8);
+  --bg-page: #f0fdf4;
+  --border: rgba(16, 185, 129, 0.15);
+  --shadow-soft: 0 4px 24px rgba(5, 150, 105, 0.08);
+  --shadow-lift: 0 20px 60px rgba(5, 150, 105, 0.18);
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+}
+
+* {
+  font-family: "Outfit", sans-serif;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-page);
+}
+
+/* ═══════════════════════════════════════════
+   3-D CARD EFFECT
+═══════════════════════════════════════════ */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 0.4s ease;
+}
+
+.card-3d:hover {
+  transform: perspective(900px) rotateX(4deg) rotateY(-4deg) translateZ(8px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Floating object (images, badges) */
+.card-3d-float {
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.card-3d:hover .card-3d-float {
+  transform: translateZ(24px);
+}
+
+/* Depth layer inside 3-D cards */
+.depth-layer {
+  transform: translateZ(15px);
+}
+
+/* ═══════════════════════════════════════════
+   GLASSMORPHISM
+═══════════════════════════════════════════ */
+.glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.glass-dark {
+  background: rgba(5, 150, 105, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-14px) rotate(1deg);
+  }
+
+  66% {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+
+  50% {
+    transform: translateY(-20px) translateX(6px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.7s ease-out forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out forwards;
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(5, 150, 105, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 48px rgba(5, 150, 105, 0.65);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes spin3d {
+  0% {
+    transform: perspective(600px) rotateY(0deg);
+  }
+
+  100% {
+    transform: perspective(600px) rotateY(360deg);
+  }
+}
+
+.animate-spin-3d {
+  animation: spin3d 12s linear infinite;
+}
+
+@keyframes orbit {
+  0% {
+    transform: rotate(0deg) translateX(80px) rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg) translateX(80px) rotate(-360deg);
+  }
+}
+
+.animate-orbit {
+  animation: orbit 10s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #f0fdf4 25%, #d1fae5 50%, #f0fdf4 75%);
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+
+  60% {
+    transform: scale(1.08);
+  }
+
+  80% {
+    transform: scale(0.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.55s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes tiltIn {
+  from {
+    opacity: 0;
+    transform: perspective(800px) rotateX(20deg) translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: perspective(800px) rotateX(0deg) translateY(0);
+  }
+}
+
+.animate-tilt-in {
+  animation: tiltIn 0.7s ease-out forwards;
+}
+
+@keyframes rotate-border {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   3-D SCENE / FLOATING ELEMENTS
+═══════════════════════════════════════════ */
+.scene-3d {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.float-orb {
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.45;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   HERO GRADIENT
+═══════════════════════════════════════════ */
+.hero-gradient {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 40%, #a7f3d0 70%, #6ee7b7 100%);
+}
+
+/* ═══════════════════════════════════════════
+   ADMIN SIDEBAR GRADIENT
+═══════════════════════════════════════════ */
+.admin-sidebar {
+  background: linear-gradient(180deg, #064e3b 0%, #047857 50%, #059669 100%);
+}
+
+/* ═══════════════════════════════════════════
+   BUTTON VARIANTS
+═══════════════════════════════════════════ */
+.btn-primary {
+  background: linear-gradient(135deg, #059669, #0d9488);
+  color: white;
+  border-radius: 0.875rem;
+  padding: 0.75rem 2rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(5, 150, 105, 0.5);
+  background: linear-gradient(135deg, #047857, #0f766e);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════
+   FORM INPUTS
+═══════════════════════════════════════════ */
+.input-field {
+  border: 2px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  background: #fff;
+}
+
+.input-field:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
+}
+
+/* ═══════════════════════════════════════════
+   STATS CARD
+═══════════════════════════════════════════ */
+.stat-card {
+  background: #fff;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* ═══════════════════════════════════════════
+   CUSTOM SCROLLBAR
+═══════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6ee7b7;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
