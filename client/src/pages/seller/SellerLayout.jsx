@@ -10,8 +10,17 @@ const SellerLayout = () => {
 
   const sidebarLinks = [
     {
-      name: "Add Product",
+      name: "Dashboard",
       path: "/seller",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+    },
+    {
+      name: "Add Product",
+      path: "/seller/add-product",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -33,6 +42,15 @@ const SellerLayout = () => {
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      ),
+    },
+    {
+      name: "Messages",
+      path: "/seller/messages",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
     },
@@ -60,8 +78,8 @@ const SellerLayout = () => {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
       {/* ── TOP NAVBAR ── */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-5 md:px-8 py-3.5 bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 flex items-center justify-between px-6 md:px-10 py-4 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-xl text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
@@ -120,9 +138,9 @@ const SellerLayout = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* ── SIDEBAR ── */}
         <aside
-          className={`admin-sidebar flex-shrink-0 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-60"} min-h-full`}
+          className={`flex-shrink-0 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"} min-h-full bg-slate-900 border-r border-slate-800 shadow-2xl z-20 overflow-y-auto`}
         >
-          <nav className="flex flex-col gap-1 p-3 mt-2">
+          <nav className="flex flex-col gap-2 p-4 mt-2">
             {sidebarLinks.map((item) => (
               <NavLink
                 to={item.path}

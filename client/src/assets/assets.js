@@ -14,7 +14,6 @@ import order_icon from "./order_icon.svg";
 import upload_area from "./upload_area.png";
 import profile_icon from "./profile_icon.png";
 import menu_icon from "./menu_icon.svg";
-import delivery_truck_icon from "./delivery_truck_icon.svg";
 import leaf_icon from "./leaf_icon.svg";
 import coin_icon from "./coin_icon.svg";
 import box_icon from "./box_icon.svg";
@@ -93,7 +92,6 @@ export const assets = {
   upload_area,
   profile_icon,
   menu_icon,
-  delivery_truck_icon,
   leaf_icon,
   coin_icon,
   trust_icon,
@@ -230,7 +228,7 @@ export const footerLinks = [
   {
     title: "Need help?",
     links: [
-      { text: "Delivery Information", url: "#" },
+      { text: "Safety Information", url: "#" },
       { text: "Return & Refund Policy", url: "#" },
       { text: "Payment Methods", url: "#" },
       { text: "Track your Order", url: "#" },
@@ -249,11 +247,6 @@ export const footerLinks = [
 ];
 
 export const features = [
-  {
-    icon: delivery_truck_icon,
-    title: "Fastest Delivery",
-    description: "Groceries delivered in under 30 minutes.",
-  },
   {
     icon: leaf_icon,
     title: "Freshness Guaranteed",

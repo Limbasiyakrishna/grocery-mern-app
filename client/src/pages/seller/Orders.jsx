@@ -6,8 +6,8 @@ import toast from "react-hot-toast";
 const statusConfig = {
   pending: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200", dot: "bg-yellow-400", label: "Pending" },
   processing: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-400", label: "Processing" },
-  shipped: { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", dot: "bg-teal-400", label: "Shipped" },
-  delivered: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-400", label: "Delivered" },
+  shipped: { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", dot: "bg-teal-400", label: "Ready" },
+  delivered: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-400", label: "Completed" },
   cancelled: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", dot: "bg-red-400", label: "Cancelled" },
 };
 
@@ -82,16 +82,23 @@ const Orders = () => {
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap mb-6">
-        {["all", "pending", "processing", "shipped", "delivered", "cancelled"].map((f) => (
+        {[
+          { v: "all", l: "All" },
+          { v: "pending", l: "Pending" },
+          { v: "processing", l: "Processing" },
+          { v: "shipped", l: "Ready" },
+          { v: "delivered", l: "Completed" },
+          { v: "cancelled", l: "Cancelled" },
+        ].map((f) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all border ${filter === f
+            key={f.v}
+            onClick={() => setFilter(f.v)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all border ${filter === f.v
                 ? "bg-emerald-600 text-white border-emerald-600 shadow"
                 : "bg-white text-gray-600 border-gray-200 hover:border-emerald-300 hover:text-emerald-600"
               }`}
           >
-            {f === "all" ? `All (${orders.length})` : f}
+            {f.v === "all" ? `All (${orders.length})` : f.l}
           </button>
         ))}
       </div>
@@ -168,7 +175,7 @@ const Orders = () => {
 
                   {/* Delivery address */}
                   <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-                    <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-2">📍 Delivery Address</p>
+                    <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-2">📍 Customer Address</p>
                     <p className="font-semibold text-gray-900 text-sm">{order.address?.firstName} {order.address?.lastName}</p>
                     <p className="text-xs text-gray-600 mt-0.5">{order.address?.street}, {order.address?.city}, {order.address?.state} {order.address?.zipcode}</p>
                     <p className="text-xs text-gray-600">{order.address?.country}</p>

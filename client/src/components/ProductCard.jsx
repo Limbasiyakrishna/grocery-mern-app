@@ -5,130 +5,74 @@ import { getImgSrc } from "../utils/imgResolver";
 
 const ProductCard = ({ product }) => {
   const { addToCart, removeFromCart, cartItems, navigate } = useAppContext();
-  const [currentImgIndex, setCurrentImgIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-
-  // Cycle through images on hover
-  useEffect(() => {
-    let interval;
-    if (isHovered && product.image.length > 1) {
-      interval = setInterval(() => {
-        setCurrentImgIndex((prev) => (prev + 1) % product.image.length);
-      }, 1000);
-    } else {
-      setCurrentImgIndex(0);
-    }
-    return () => clearInterval(interval);
-  }, [isHovered, product.image.length]);
 
   return (
     product && (
       <div
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
-          navigate(
-            `/product/${product.category.toLowerCase()}/${product?._id}`
-          );
+          navigate(`/product/${product.category.toLowerCase()}/${product?._id}`);
           scrollTo(0, 0);
         }}
-        className="card-3d group relative bg-white rounded-3xl border border-gray-100 p-3 transition-all duration-400 overflow-hidden hover:border-emerald-200 cursor-pointer"
+        className="group relative bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-2 sm:p-2.5 transition-all hover:shadow-md cursor-pointer flex flex-col h-full"
       >
-        {/* Gradient Background on Hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/0 to-teal-50/0 group-hover:from-emerald-50/50 group-hover:to-teal-50/50 transition-all duration-500 opacity-0 group-hover:opacity-100" />
-
-        {/* Badges */}
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 depth-layer">
-          {product.offerPrice < product.price && (
-            <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
-              SALE
-            </span>
-          )}
-        </div>
-
         {/* Image Section */}
-        <div className="card-3d-float relative aspect-square rounded-2xl overflow-hidden bg-gray-50/50 mb-4 p-2">
-          <img
-            className={`w-full h-full object-contain transition-transform duration-500 ${isHovered ? "scale-110" : "scale-100"}`}
-            src={getImgSrc(product.image[currentImgIndex])}
-            alt={product.name}
-          />
-
-          {/* Image Dots */}
-          {product.image.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              {product.image.map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${currentImgIndex === i ? "bg-emerald-600 w-3" : "bg-gray-300"}`}
-                />
-              ))}
+        <div className="relative aspect-square rounded-lg sm:rounded-xl overflow-hidden bg-gray-50 mb-2 sm:mb-3 flex items-center justify-center p-1.5 sm:p-2">
+           {product.offerPrice < product.price && (
+            <div className="absolute top-0 left-0 z-10 bg-blue-600 text-white text-[7px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-br-lg uppercase">
+              {Math.round(((product.price - product.offerPrice) / product.price) * 100)}% OFF
             </div>
           )}
+          <img
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+            src={getImgSrc(product.image?.[0])}
+            alt={product.name}
+          />
         </div>
 
         {/* Info Section */}
-        <div className="px-2 pb-2">
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">
-            {product.category}
-          </p>
-          <h3 className="text-gray-900 font-semibold text-sm truncate mb-1 group-hover:text-emerald-600 transition-colors">
+        <div className="flex flex-col flex-1">
+          <h3 className="text-gray-900 font-bold text-xs sm:text-sm leading-tight mb-0.5 sm:mb-1 line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
             {product.name}
           </h3>
+          
+          <p className="text-[9px] sm:text-[11px] text-gray-500 mb-1.5 sm:mb-2 line-clamp-1 italic">
+            {product.description?.[0]}
+          </p>
 
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex">
-              {Array(5)
-                .fill("")
-                .map((_, i) => (
-                  <img
-                    key={i}
-                    src={i < 4 ? assets.star_icon : assets.star_dull_icon}
-                    alt="rating"
-                    className="w-3"
-                  />
-                ))}
-            </div>
-            <span className="text-[10px] text-gray-400 font-medium">(4.0)</span>
-          </div>
-
-          <div className="flex items-center justify-between">
+          <div className="mt-auto flex items-center justify-between gap-1.5 sm:gap-2">
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-emerald-600">
+              <span className="text-xs sm:text-sm font-black text-gray-900">
                 ₹{product.offerPrice}
               </span>
-              <span className="text-xs text-gray-400 line-through">
-                ₹{product.price}
-              </span>
+              {product.offerPrice < product.price && (
+                <span className="text-[8px] sm:text-[10px] text-gray-400 line-through">
+                  ₹{product.price}
+                </span>
+              )}
             </div>
 
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center"
-            >
+    <div onClick={(e) => e.stopPropagation()}>
               {!cartItems?.[product?._id] ? (
                 <button
                   onClick={() => addToCart(product?._id)}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3 rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 group/btn"
+                  className="bg-white text-emerald-600 border border-emerald-600 px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-tight hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-90 whitespace-nowrap"
                 >
-                  <svg className="w-5 h-5 group-hover/btn:scale-125 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                  </svg>
+                  ADD
                 </button>
               ) : (
-                <div className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 rounded-xl border border-emerald-200 shadow-sm">
+                <div className="flex items-center justify-between bg-emerald-600 text-white px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-md sm:rounded-[0.625rem] shadow-xl shadow-emerald-900/10 min-w-[70px] sm:min-w-[84px] animate-scale-up-fade">
                   <button
                     onClick={() => removeFromCart(product?._id)}
-                    className="w-7 h-7 flex items-center justify-center text-emerald-600 hover:bg-white rounded-lg transition-all hover:shadow-md font-bold"
+                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center hover:bg-white/20 rounded-md transition-colors font-black text-xs sm:text-sm"
                   >
                     −
                   </button>
-                  <span className="text-sm font-bold text-emerald-600 min-w-6 text-center">
+                  <span className="text-[9px] sm:text-xs font-black mx-1 sm:mx-1.5 drop-shadow-sm">
                     {cartItems[product?._id]}
                   </span>
                   <button
                     onClick={() => addToCart(product?._id)}
-                    className="w-7 h-7 flex items-center justify-center text-emerald-600 hover:bg-white rounded-lg transition-all hover:shadow-md font-bold"
+                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center hover:bg-white/20 rounded-md transition-colors font-black text-xs sm:text-sm"
                   >
                     +
                   </button>

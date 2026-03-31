@@ -16,6 +16,7 @@ import SellerLayout from "./pages/seller/SellerLayout";
 import AddProduct from "./pages/seller/AddProduct";
 import ProductList from "./pages/seller/ProductList";
 import Orders from "./pages/seller/Orders";
+import Dashboard from "./pages/seller/Dashboard";
 import NewArrivals from "./pages/NewArrivals";
 import BestSellers from "./pages/BestSellers";
 import Blog from "./pages/Blog";
@@ -23,9 +24,12 @@ import CookingTips from "./pages/CookingTips";
 import Health from "./pages/Health";
 import Rewards from "./pages/Rewards";
 import BottomNav from "./components/BottomNav";
+import FloatingCart from "./components/FloatingCart";
+import ContactUs from "./pages/ContactUs";
+import SellerMessages from "./pages/seller/SellerMessages";
 
 const App = () => {
-  const isSellerPath = useLocation().pathname.includes("seller");
+  const isSellerPath = useLocation().pathname.startsWith("/seller");
   const { showUserLogin, isSeller } = useAppContext();
 
   return (
@@ -48,19 +52,26 @@ const App = () => {
           <Route path="/blog/cooking-tips" element={<CookingTips />} />
           <Route path="/blog/health" element={<Health />} />
           <Route path="/rewards" element={<Rewards />} />
+          <Route path="/contact" element={<ContactUs />} />
           <Route
             path="/seller"
             element={isSeller ? <SellerLayout /> : <SellerLogin />}
           >
-            <Route index element={isSeller ? <AddProduct /> : null} />
+            <Route index element={isSeller ? <Dashboard /> : null} />
+            <Route
+              path="add-product"
+              element={isSeller ? <AddProduct /> : null}
+            />
             <Route
               path="product-list"
               element={isSeller ? <ProductList /> : null}
             />
             <Route path="orders" element={isSeller ? <Orders /> : null} />
+            <Route path="messages" element={isSeller ? <SellerMessages /> : null} />
           </Route>
         </Routes>
       </div>
+      {isSellerPath ? null : <FloatingCart />}
       {isSellerPath ? null : <Footer />}
       {isSellerPath ? null : <BottomNav />}
     </div>

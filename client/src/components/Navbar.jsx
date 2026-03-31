@@ -3,12 +3,25 @@ import { Link, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { assets } from "../assets/assets";
 import toast from "react-hot-toast";
+import SearchSuggestions from "./SearchSuggestions";
+import CartDrawer from "./CartDrawer";
+
 const Navbar = () => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showCartDrawer, setShowCartDrawer] = useState(false);
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const [openShop, setOpenShop] = useState(false);
-  const [openProduct, setOpenProduct] = useState(false);
-  const [openBlog, setOpenBlog] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setOpen(false);
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const {
     user,
     setUser,
@@ -32,34 +45,49 @@ const Navbar = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      // Silently handle auth errors during logout
+      if (error.response?.status !== 401) {
+        toast.error(error.message);
+      }
+      // Still clear user data on logout attempt
+      setUser(null);
     }
   };
+
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    if (query.length > 0 && location.pathname !== "/products") {
-      navigate("/products");
-    }
+    if (query.length > 0) setShowSuggestions(true);
+    if (query.length === 0) setShowSuggestions(false);
   };
 
   return (
-    <nav className="flex items-center justify-between px-4 md:px-8 lg:px-16 xl:px-24 py-2 border-b border-emerald-100/60 bg-gradient-to-r from-emerald-50/95 via-white/95 to-teal-50/95 backdrop-blur-md sticky top-0 z-50 transition-all shadow-sm rounded-b-2xl md:rounded-b-[2rem]">
-      <Link to="/" className="flex items-center">
-        <img src={assets.freshLogo} alt="FreshNest Logo" className="h-9 sm:h-10 md:h-12 w-auto object-contain transition-transform hover:scale-105 duration-300 drop-shadow-sm" />
+    <>
+    <nav className={`flex items-center justify-between transition-all duration-500 sticky top-0 z-50 ${
+      scrolled || location.pathname !== "/"
+        ? "px-3 sm:px-4 md:px-8 lg:px-16 xl:px-24 py-2 sm:py-3 border-b border-emerald-100/60 bg-white/80 backdrop-blur-xl shadow-lg rounded-b-[2rem]" 
+        : "px-3 sm:px-4 md:px-8 lg:px-16 xl:px-24 py-3 sm:py-5 bg-transparent"
+    }`}>
+      <Link to="/" className="flex items-center min-w-fit">
+        <img 
+          src={assets.freshLogo} 
+          alt="FreshNest" 
+          className="h-8 sm:h-10 md:h-12 w-auto object-contain transition-transform hover:scale-105 duration-300 drop-shadow-sm" 
+          loading="eager"
+        />
       </Link>
 
       {/* Desktop Menu */}
-      <div className="hidden sm:flex items-center gap-6 lg:gap-8 font-semibold text-gray-700">
-        <Link to={"/"} className="text-gray-700 hover:text-emerald-600 transition duration-300 relative group text-sm lg:text-base">
+      <div className="hidden sm:flex items-center gap-2 lg:gap-4 xl:gap-6 font-semibold text-gray-700 flex-1 px-4 lg:px-8">
+        <Link to={"/"} className="text-gray-700 hover:text-emerald-600 transition duration-300 relative group text-xs lg:text-sm whitespace-nowrap">
           Home
           <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
         </Link>
         <div className="relative group cursor-pointer">
-          <div className="flex items-center gap-1 text-gray-700 hover:text-emerald-600 transition text-sm lg:text-base relative pb-1">
+          <div className="flex items-center gap-1 text-gray-700 hover:text-emerald-600 transition text-xs lg:text-sm relative pb-1 whitespace-nowrap">
             Shop
             <svg
-              className="w-3.5 h-3.5 group-hover:-rotate-180 transition-transform duration-300"
+              className="w-3 h-3 group-hover:-rotate-180 transition-transform duration-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -69,480 +97,231 @@ const Navbar = () => {
             </svg>
             <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
           </div>
-          <ul className="hidden group-hover:block absolute top-full left-0 bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl py-2 w-48 z-50 mt-1 animate-in fade-in slide-in-from-top-2 duration-200">
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products/vegetables">Vegetables</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products/fruits">Fresh Fruits</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products/dairy">Dairy Products</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products/beverages">Beverages</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products/namkeens">Namkeens</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products/chocolates">Chocolates</Link>
-            </li>
-          </ul>
-        </div>
-
-        <div className="relative group cursor-pointer">
-          <div className="flex items-center gap-1 text-gray-700 hover:text-emerald-600 transition text-sm lg:text-base relative pb-1">
-            Product
-            <svg
-              className="w-3.5 h-3.5 group-hover:-rotate-180 transition-transform duration-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
-            </svg>
-            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-          </div>
-          <ul className="hidden group-hover:block absolute top-full left-0 bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl py-2 w-48 z-50 mt-1 animate-in fade-in slide-in-from-top-2 duration-200">
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/products">All Products</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/new-arrivals">New Arrivals</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/best-sellers">Best Sellers</Link>
-            </li>
-          </ul>
-        </div>
-
-        <div className="relative group cursor-pointer">
-          <div className="flex items-center gap-1 text-gray-700 hover:text-emerald-600 transition text-sm lg:text-base relative pb-1">
-            Blog
-            <svg
-              className="w-3.5 h-3.5 group-hover:-rotate-180 transition-transform duration-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
-            </svg>
-            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-          </div>
-          <ul className="hidden group-hover:block absolute top-full left-0 bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl py-2 w-48 z-50 mt-1 animate-in fade-in slide-in-from-top-2 duration-200">
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/blog">Latest News</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/blog/cooking-tips">Cooking Tips</Link>
-            </li>
-            <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-              <Link className="block w-full" to="/blog/health">Health & Wellness</Link>
-            </li>
-          </ul>
-        </div>
-
-        <Link to={"/rewards"} className="text-gray-700 hover:text-emerald-600 transition duration-300 relative group text-sm lg:text-base">
-          Rewards
-          <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-        </Link>
-        <div className="hidden lg:flex items-center text-sm gap-2.5 border border-gray-200 px-4 py-2.5 rounded-2xl hover:border-emerald-500 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all duration-300 bg-gray-50/50 backdrop-blur-sm shadow-inner group">
-          <input
-            onChange={handleSearch}
-            value={searchQuery}
-            className="py-1 w-full bg-transparent outline-none placeholder-gray-400 text-gray-700 font-medium font-sans"
-            type="text"
-            placeholder="Search groceries..."
-          />
-          <svg
-            className="w-4 h-4 text-gray-400 group-hover:text-emerald-500 transition-colors"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="M21 21l-4.35-4.35"></path>
-          </svg>
-        </div>
-
-        <div onClick={() => navigate("/cart")} className="relative cursor-pointer group flex items-center justify-center">
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 14 14"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="text-emerald-600 group-hover:scale-110 group-hover:text-emerald-500 transition-all duration-300 drop-shadow-sm"
-          >
-            <path
-              d="M.583.583h2.333l1.564 7.81a1.17 1.17 0 0 0 1.166.94h5.67a1.17 1.17 0 0 0 1.167-.94l.933-4.893H3.5m2.333 8.75a.583.583 0 1 1-1.167 0 .583.583 0 0 1 1.167 0m6.417 0a.583.583 0 1 1-1.167 0 .583.583 0 0 1 1.167 0"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1"
-            />
-          </svg>
-          <button className="absolute -top-1.5 -right-2 text-[10px] text-white bg-red-500 border-2 border-white w-5 h-5 rounded-full font-black shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 flex items-center justify-center">
-            {cartCount()}
-          </button>
-        </div>
-
-        {user ? (
-          <div className="relative group">
-            <img src={assets.profile_icon} alt="Profile" className="w-9 h-9 rounded-full cursor-pointer hover:shadow-md transition-shadow" />
-            <ul className="hidden group-hover:block absolute top-11 right-0 bg-white shadow-lg border border-gray-200 py-2 w-32 rounded-lg z-40 text-sm">
-              <li
-                onClick={() => navigate("/my-orders")}
-                className="px-4 py-2.5 cursor-pointer hover:bg-emerald-50 hover:text-emerald-600 transition text-sm"
-              >
-                My Orders
+          <div className="hidden group-hover:block absolute top-full left-0 pt-2 z-50">
+            <ul className="bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl py-2 w-40 lg:w-48 animate-in fade-in slide-in-from-top-2 duration-200">
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products/vegetables">Vegetables</Link>
               </li>
-              <li className="cursor-pointer px-4 py-2.5 hover:bg-rose-50 hover:text-rose-600 transition text-sm" onClick={logout}>
-                Logout
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products/fruits">Fresh Fruits</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products/dairy">Dairy Products</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products/beverages">Beverages</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products/namkeens">Namkeens</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products/chocolates">Chocolates</Link>
               </li>
             </ul>
           </div>
-        ) : (
-          <button
-            onClick={() => {
-              setOpen(false);
-              setShowUserLogin(true);
-            }}
-            className="cursor-pointer px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all text-white rounded-full font-semibold text-sm shadow-md hover:shadow-lg active:scale-95"
-          >
-            Login
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-6 md:hidden">
-        <div
-          className="relative cursor-pointer"
-          onClick={() => navigate("/cart")}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 14 14"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M.583.583h2.333l1.564 7.81a1.17 1.17 0 0 0 1.166.94h5.67a1.17 1.17 0 0 0 1.167-.94l.933-4.893H3.5m2.333 8.75a.583.583 0 1 1-1.167 0 .583.583 0 0 1 1.167 0m6.417 0a.583.583 0 1 1-1.167 0 .583.583 0 0 1 1.167 0"
-              stroke="#059669"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <button className="absolute -top-2 -right-3 text-xs text-white bg-emerald-600 w-[18px] h-[18px] rounded-full">
-            {cartCount()}
-          </button>
         </div>
-        <button
-          onClick={() => (open ? setOpen(false) : setOpen(true))}
-          aria-label="Menu"
-          className="sm:hidden"
-        >
-          {/* Menu Icon SVG */}
-          <svg
-            width="21"
-            height="15"
-            viewBox="0 0 21 15"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="21" height="1.5" rx=".75" fill="#426287" />
-            <rect x="8" y="6" width="13" height="1.5" rx=".75" fill="#426287" />
-            <rect
-              x="6"
-              y="13"
-              width="15"
-              height="1.5"
-              rx=".75"
-              fill="#426287"
+
+        <div className="relative group cursor-pointer">
+          <div className="flex items-center gap-1 text-gray-700 hover:text-emerald-600 transition text-xs lg:text-sm relative pb-1 whitespace-nowrap">
+            Product
+            <svg
+              className="w-3 h-3 group-hover:-rotate-180 transition-transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+            </svg>
+            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
+          </div>
+          <div className="hidden group-hover:block absolute top-full left-0 pt-2 z-50">
+            <ul className="bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl py-2 w-40 lg:w-48 animate-in fade-in slide-in-from-top-2 duration-200">
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/products">All Products</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/new-arrivals">New Arrivals</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/best-sellers">Best Sellers</Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="relative group cursor-pointer">
+          <div className="flex items-center gap-1 text-gray-700 hover:text-emerald-600 transition text-xs lg:text-sm relative pb-1 whitespace-nowrap">
+            Blog
+            <svg
+              className="w-3 h-3 group-hover:-rotate-180 transition-transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+            </svg>
+            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
+          </div>
+          <div className="hidden group-hover:block absolute top-full left-0 pt-2 z-50">
+            <ul className="bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl py-2 w-40 lg:w-48 animate-in fade-in slide-in-from-top-2 duration-200">
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/blog">Latest News</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/blog/cooking-tips">Cooking Tips</Link>
+              </li>
+              <li className="px-3 py-1.5 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs lg:text-sm font-medium">
+                <Link className="block w-full" to="/blog/health">Health & Wellness</Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <Link to={"/rewards"} className="text-gray-700 hover:text-emerald-600 transition duration-300 relative group text-xs lg:text-sm whitespace-nowrap">
+          Rewards
+          <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
+        </Link>
+        <Link to={"/contact"} className="text-gray-700 hover:text-emerald-600 transition duration-300 relative group text-xs lg:text-sm whitespace-nowrap">
+          Contact
+          <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-emerald-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
+        </Link>
+        <div className="relative group">
+          <div className="hidden lg:flex items-center text-sm gap-2.5 border border-gray-200 px-3 lg:px-4 py-2 lg:py-2.5 rounded-2xl hover:border-emerald-500 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all duration-300 bg-gray-50/50 backdrop-blur-sm shadow-inner group">
+            <input
+              onChange={handleSearch}
+              onFocus={() => searchQuery.length > 0 && setShowSuggestions(true)}
+              value={searchQuery}
+              className="py-1 w-full bg-transparent outline-none placeholder-gray-400 text-gray-700 font-medium font-sans text-xs lg:text-sm"
+              type="text"
+              placeholder="Search..."
             />
+            <svg
+              className="w-4 h-4 text-gray-400 group-hover:text-emerald-500 transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="M21 21l-4.35-4.35"></path>
+            </svg>
+          </div>
+          <SearchSuggestions 
+            query={searchQuery} 
+            isVisible={showSuggestions} 
+            onClose={() => {
+                setShowSuggestions(false);
+                if (location.pathname !== "/products") navigate("/products");
+            }} 
+          />
+        </div>
+      </div>
+
+      {/* Cart & Profile Icons */}
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 relative ml-auto sm:ml-2">
+        <div 
+           onClick={() => {
+             if (window.innerWidth > 640) {
+               setShowCartDrawer(true);
+             } else {
+               navigate("/cart");
+             }
+           }} 
+           className="hidden sm:flex relative cursor-pointer items-center justify-center h-9 sm:h-10 w-9 sm:w-10 bg-gray-50 text-gray-700 rounded-2xl border border-gray-100/50 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100 transition-all active:scale-90"
+        >
+          <svg className="w-4 sm:w-5 h-4 sm:h-5 group-hover:animate-bounce-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          {cartCount() > 0 && (
+            <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[9px] sm:text-[10px] w-4 sm:w-5 h-4 sm:h-5 rounded-full flex items-center justify-center font-black animate-scale-up-fade ring-2 ring-white">
+              {cartCount()}
+            </span>
+          )}
+        </div>
+
+        <div className="relative group p-0.5 sm:p-1">
+          <div
+            onClick={() => !user ? setShowUserLogin(true) : null}
+            className="hidden sm:flex items-center justify-center h-9 sm:h-10 w-9 sm:w-10 bg-gray-50 text-gray-700 rounded-2xl border border-gray-100/50 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100 transition-all cursor-pointer active:scale-90 overflow-hidden"
+          >
+            {user ? (
+               <img src={assets.profile_icon} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+                <svg className="w-4 sm:w-5 h-4 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            )}
+          </div>
+          {user && (
+            <div className="hidden group-hover:block absolute top-full right-0 pt-3 z-50">
+              <ul className="bg-white/95 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl py-3 w-40 sm:w-44 animate-in fade-in slide-in-from-top-4">
+                <li onClick={() => navigate("/my-orders")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
+                  Orders History
+                </li>
+                <li onClick={() => navigate("/add-address")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
+                  My Addresses
+                </li>
+                <li onClick={logout} className="px-4 py-2 mx-2 rounded-xl hover:bg-red-50 hover:text-red-600 transition text-xs sm:text-sm font-black cursor-pointer mt-1 pt-3 border-t border-gray-100">
+                  Sign Out
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setOpen(!open)}
+          className="sm:hidden flex items-center justify-center h-9 w-9 bg-emerald-600 text-white rounded-xl sm:rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-90"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16m-7 6h7" />
           </svg>
         </button>
       </div>
 
-      {/* Mobile Menu */}
-      <div
-        className={`${open ? "flex" : "hidden"
-          } absolute top-[60px] left-0 w-full bg-white shadow-md py-4 flex-col items-start gap-2 px-5 text-sm md:hidden z-50`}
-      >
-        <div className="flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full w-full mb-4">
-          <input
-            onChange={handleSearch}
-            value={searchQuery}
-            className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500"
-            type="text"
-            placeholder="Search products"
-          />
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M10.836 10.615 15 14.695"
-              stroke="#7A7B7D"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              clip-rule="evenodd"
-              d="M9.141 11.738c2.729-1.136 4.001-4.224 2.841-6.898S7.67.921 4.942 2.057C2.211 3.193.94 6.281 2.1 8.955s4.312 3.92 7.041 2.783"
-              stroke="#7A7B7D"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
-        <Link onClick={() => setOpen(false)} to={"/"} className="w-full py-2 hover:text-emerald-600">
-          Home
-        </Link>
-
-        {/* Mobile Shop Dropdown */}
-        <div className="w-full">
-          <button
-            onClick={() => setOpenShop(!openShop)}
-            className="w-full text-left py-2 hover:text-emerald-600 flex justify-between items-center"
-          >
-            Shop
-            <svg
-              className={`w-3.5 h-3.5 transition-transform ${openShop ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </button>
-          {openShop && (
-            <div className="pl-4 flex flex-col gap-2">
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenShop(false);
-                }}
-                to="/products/vegetables"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Vegetables
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenShop(false);
-                }}
-                to="/products/fruits"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Fresh Fruits
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenShop(false);
-                }}
-                to="/products/dairy"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Dairy Products
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenShop(false);
-                }}
-                to="/products/beverages"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Beverages
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenShop(false);
-                }}
-                to="/products/namkeens"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Namkeens
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenShop(false);
-                }}
-                to="/products/chocolates"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Chocolates
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Product Dropdown */}
-        <div className="w-full">
-          <button
-            onClick={() => setOpenProduct(!openProduct)}
-            className="w-full text-left py-2 hover:text-emerald-600 flex justify-between items-center"
-          >
-            Products
-            <svg
-              className={`w-3.5 h-3.5 transition-transform ${openProduct ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </button>
-          {openProduct && (
-            <div className="pl-4 flex flex-col gap-2">
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenProduct(false);
-                }}
-                to="/products"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                All Products
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenProduct(false);
-                }}
-                to="/new-arrivals"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                New Arrivals
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenProduct(false);
-                }}
-                to="/best-sellers"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Best Sellers
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Blog Dropdown */}
-        <div className="w-full">
-          <button
-            onClick={() => setOpenBlog(!openBlog)}
-            className="w-full text-left py-2 hover:text-emerald-600 flex justify-between items-center"
-          >
-            Blog
-            <svg
-              className={`w-3.5 h-3.5 transition-transform ${openBlog ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </button>
-          {openBlog && (
-            <div className="pl-4 flex flex-col gap-2">
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenBlog(false);
-                }}
-                to="/blog"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Latest News
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenBlog(false);
-                }}
-                to="/blog/cooking-tips"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Cooking Tips
-              </Link>
-              <Link
-                onClick={() => {
-                  setOpen(false);
-                  setOpenBlog(false);
-                }}
-                to="/blog/health"
-                className="py-1.5 hover:text-emerald-600"
-              >
-                Health & Wellness
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {user ? (
-          <div className="w-full">
-            <button
-              onClick={() => navigate("/my-orders")}
-              className="w-full text-left py-2 hover:text-emerald-600"
-            >
-              My Orders
-            </button>
-            <button
-              className="w-full text-left py-2 hover:text-emerald-600"
-              onClick={() => {
-                logout();
-                setOpen(false);
-              }}
-            >
-              Logout
-            </button>
+      {/* Mobile Menu Sidebar */}
+      <div className={`fixed inset-0 z-[65] sm:hidden transition-all duration-500 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className={`absolute top-0 right-0 w-full max-w-sm xs:max-w-xs h-full bg-white shadow-2xl transition-transform duration-500 flex flex-col ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+              <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between">
+                  <img src={assets.freshLogo} className="h-7 sm:h-8" />
+                  <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 font-black text-sm sm:text-base">
+                  <Link to="/" onClick={() => setOpen(false)} className="block py-2 text-lg sm:text-xl text-gray-900">Home</Link>
+                  <div className="space-y-2">
+                      <p className="text-[10px] text-emerald-600 uppercase tracking-widest pt-4">Categories</p>
+                      <Link to="/products/vegetables" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">Vegetables</Link>
+                      <Link to="/products/fruits" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">Fresh Fruits</Link>
+                      <Link to="/products/dairy" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">Dairy & Breakfast</Link>
+                  </div>
+                  <div className="space-y-2">
+                      <p className="text-[10px] text-emerald-600 uppercase tracking-widest pt-4">Pages</p>
+                      <Link to="/new-arrivals" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">New Arrivals</Link>
+                      <Link to="/best-sellers" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">Best Sellers</Link>
+                      <Link to="/blog" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">Our Blog</Link>
+                      <Link to="/contact" onClick={() => setOpen(false)} className="block py-2 text-base sm:text-lg text-gray-700">Contact Us</Link>
+                  </div>
+              </div>
+              <div className="p-4 sm:p-6 border-t border-gray-50">
+                  {user ? (
+                      <button onClick={logout} className="w-full bg-red-50 text-red-600 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base hover:bg-red-100 transition">Sign Out</button>
+                  ) : (
+                      <button onClick={() => { setOpen(false); setShowUserLogin(true); }} className="w-full bg-emerald-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base hover:bg-emerald-700 transition">Sign In</button>
+                  )}
+              </div>
           </div>
-        ) : (
-          <button
-            onClick={() => {
-              setOpen(false);
-              setShowUserLogin(true);
-            }}
-            className="cursor-pointer px-8 py-2 bg-emerald-500 hover:bg-emerald-600 transition text-white rounded-full w-full"
-          >
-            Login
-          </button>
-        )}
       </div>
     </nav>
+    <CartDrawer isOpen={showCartDrawer} onClose={() => setShowCartDrawer(false)} />
+    </>
   );
 };
 

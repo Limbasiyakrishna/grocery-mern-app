@@ -9,45 +9,47 @@ const Features = () => {
     ];
 
     return (
-        <div className="my-20 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="my-12 sm:my-16 md:my-20 max-w-7xl mx-auto px-3 sm:px-4 md:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-10">
             {features.map((feature, index) => {
                 const c = colors[index % colors.length];
                 return (
                     <div
                         key={index}
-                        className={`card-3d group relative flex flex-col items-center text-center p-8 rounded-3xl border ${c.border} ${c.bg} overflow-hidden cursor-default`}
-                        style={{ animationDelay: `${index * 120}ms` }}
+                        className={`card-3d group relative flex flex-col items-center text-center p-5 sm:p-7 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl md:rounded-[2.5rem] border ${c.border} ${c.bg} overflow-hidden cursor-default animate-reveal`}
+                        style={{ animationDelay: `${index * 150}ms` }}
                     >
                         {/* Glow blob */}
                         <div
-                            className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                            style={{ background: `radial-gradient(circle, ${c.glow}, transparent 70%)`, top: "-2rem" }}
+                            className="absolute top-0 left-1/2 -translate-x-1/2 w-32 sm:w-40 md:w-48 h-32 sm:h-40 md:h-48 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                            style={{ background: `radial-gradient(circle, ${c.glow}, transparent 70%)`, top: "-1.5rem" }}
                         />
 
                         {/* 3-D icon box */}
                         <div
-                            className={`card-3d-float w-20 h-20 flex items-center justify-center ${c.icon} rounded-2xl mb-5 relative`}
+                            className={`card-3d-float w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 flex items-center justify-center ${c.icon} rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 md:mb-8 relative flex-shrink-0`}
                             style={{
-                                boxShadow: `0 8px 24px ${c.glow}, inset 0 1px 0 rgba(255,255,255,0.8)`,
+                                boxShadow: `0 12px 30px ${c.glow}, inset 0 2px 0 rgba(255,255,255,0.9)`,
                             }}
                         >
-                            <img src={feature.icon} alt={feature.title} className="w-10 h-10" />
+                            <img src={feature.icon} alt={feature.title} className="w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12" />
                             {/* subtle inner shine */}
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/60 to-transparent" />
+                            <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/70 to-transparent" />
                         </div>
 
-                        <h3 className={`text-lg font-black text-gray-800 mb-2 group-hover:${c.text} transition-colors`}>
+                        <h3 className={`text-base sm:text-lg md:text-xl font-black text-slate-800 mb-2 sm:mb-3 md:mb-4 group-hover:${c.text} transition-colors uppercase tracking-widest`}>
                             {feature.title}
                         </h3>
-                        <p className="text-sm text-gray-500 leading-relaxed">
+                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed px-1 sm:px-2">
                             {feature.description}
                         </p>
 
                         {/* Bottom accent line */}
-                        <div className={`absolute bottom-0 left-0 right-0 h-1 ${c.icon} scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
+                        <div className={`absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 ${c.icon} scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left`} />
                     </div>
                 );
             })}
+            </div>
         </div>
     );
 };

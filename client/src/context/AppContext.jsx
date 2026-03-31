@@ -5,6 +5,21 @@ import toast from "react-hot-toast";
 import axios from "axios";
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+
+// Add response interceptor to suppress 401 errors for read-only operations
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Silently handle 401 errors - they're expected when user isn't logged in
+    if (error.response?.status === 401) {
+      // Don't show error, just return a rejected promise
+      return Promise.reject(error);
+    }
+    // For other errors, return the error normally
+    return Promise.reject(error);
+  }
+);
+
 export const AppContext = createContext(null);
 
 export const AppContextProvider = ({ children }) => {
@@ -15,6 +30,9 @@ export const AppContextProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [collaborationId, setCollaborationId] = useState(null);
+  const [participantCount, setParticipantCount] = useState(1);
+  const [isCartsSyncing, setIsCartsSyncing] = useState(false);
 
   // check seller status
   const fetchSeller = async () => {
@@ -37,11 +55,12 @@ export const AppContextProvider = ({ children }) => {
       if (data.success) {
         setUser(data.user);
         setCartItems(data.user.cartItems);
+        setCollaborationId(data.user.collaborativeCartId);
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      console.log(error);
+      // Handle auth error quietly
     }
   };
 
@@ -56,7 +75,6 @@ export const AppContextProvider = ({ children }) => {
         setProducts(dummyProducts);
       }
     } catch (error) {
-      console.log("Backend unavailable, using local products:", error.message);
       setProducts(dummyProducts);
     }
   };
@@ -95,10 +113,18 @@ export const AppContextProvider = ({ children }) => {
     let totalAmount = 0;
     for (const items in cartItems) {
       let itemInfo = products.find((product) => product._id === items);
-      if (cartItems[items] > 0) {
+      if (itemInfo && cartItems[items] > 0) {
         totalAmount += cartItems[items] * itemInfo.offerPrice;
       }
     }
+    
+    // Social Discount Logic
+    let discount = 0;
+    if (participantCount === 2) discount = 0.02; // 2% off
+    else if (participantCount >= 3) discount = 0.05; // 5% off
+    
+    totalAmount = totalAmount * (1 - discount);
+    
     return Math.floor(totalAmount * 100) / 100;
   };
   // remove product from cart
@@ -113,11 +139,40 @@ export const AppContextProvider = ({ children }) => {
       setCartItems(cartData);
     }
   };
+  // sync shared cart items
+  const syncSharedCart = async () => {
+    if (!user) return;
+    try {
+      const { data } = await axios.get("/api/cart/sync");
+      if (data.success) {
+        setCartItems(data.cartItems || {});
+        if (data.isShared) {
+          setParticipantCount(data.participantCount || 1);
+        } else {
+          setParticipantCount(1);
+        }
+      }
+    } catch (error) {
+      // Sync error handled quietly or via toast if critical
+    }
+  };
+
   useEffect(() => {
     fetchSeller();
     fetchProducts();
     fetchUser();
   }, []);
+
+  // Polling for collaborative cart updates
+  useEffect(() => {
+    let interval;
+    if (user) {
+      interval = setInterval(() => {
+        syncSharedCart();
+      }, 5000); // sync every 5 seconds
+    }
+    return () => clearInterval(interval);
+  }, [user]);
 
   // update database cart items
   useEffect(() => {
@@ -137,6 +192,48 @@ export const AppContextProvider = ({ children }) => {
       updateCart();
     }
   }, [cartItems]);
+
+  const startCollaboration = async () => {
+    try {
+      const { data } = await axios.get("/api/cart/start");
+      if (data.success) {
+        setCollaborationId(data.roomId);
+        toast.success("Room created! Share the link with friends.");
+        await syncSharedCart();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to start collaboration");
+    }
+  };
+
+  const joinCollaboration = async (roomId) => {
+    try {
+      const { data } = await axios.post("/api/cart/join", { roomId });
+      if (data.success) {
+        setCollaborationId(roomId);
+        setCartItems(data.cartItems);
+        setParticipantCount(data.participantCount || 1);
+        toast.success("Welcome to the shared cart!");
+        await syncSharedCart();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Invalid Room ID");
+    }
+  };
+
+  const leaveCollaboration = async () => {
+    try {
+      const { data } = await axios.get("/api/cart/leave");
+      if (data.success) {
+        setCollaborationId(null);
+        toast.success("Back to your private cart.");
+        await fetchUser(); // reload personal cart
+      }
+    } catch (error) {
+      toast.error("Failed to leave collaboration");
+    }
+  };
+
   const value = {
     navigate,
     user,
@@ -157,6 +254,13 @@ export const AppContextProvider = ({ children }) => {
     axios,
     fetchProducts,
     setCartItems,
+    collaborationId,
+    setCollaborationId,
+    participantCount,
+    syncSharedCart,
+    startCollaboration,
+    joinCollaboration,
+    leaveCollaboration
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
