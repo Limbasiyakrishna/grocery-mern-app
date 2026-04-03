@@ -27,18 +27,34 @@ import BottomNav from "./components/BottomNav";
 import FloatingCart from "./components/FloatingCart";
 import ContactUs from "./pages/ContactUs";
 import SellerMessages from "./pages/seller/SellerMessages";
+import Profile from "./pages/Profile";
 
+/**
+ * Main App component that handles all routing for the FreshNest grocery application
+ * Includes both customer-facing pages and seller dashboard routes
+ */
 const App = () => {
+  // Check if current path is seller-related for conditional rendering
   const isSellerPath = useLocation().pathname.startsWith("/seller");
-  const { showUserLogin, isSeller } = useAppContext();
+
+  // Get authentication state from context
+  const { showUserLogin, isSeller, isDarkMode } = useAppContext();
 
   return (
-    <div className="bg-slate-100 min-h-screen text-default">
+    <div className={`min-h-screen text-default transition-colors duration-300 ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-slate-100 text-gray-900'}`}>
+      {/* Conditionally render navbar for non-seller pages */}
       {isSellerPath ? null : <Navbar />}
+
+      {/* Show authentication modal if needed */}
       {showUserLogin ? <Auth /> : null}
+
+      {/* Toast notifications */}
       <Toaster />
+
+      {/* Main content container with responsive padding */}
       <div className={`${isSellerPath ? "" : "px-6 md:px-16 lg:px-24 xl:px-32"}`}>
         <Routes>
+          {/* Public customer routes */}
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
           <Route path="/products/:category" element={<ProductCategory />} />
@@ -46,6 +62,7 @@ const App = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/add-address" element={<Address />} />
           <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/new-arrivals" element={<NewArrivals />} />
           <Route path="/best-sellers" element={<BestSellers />} />
           <Route path="/blog" element={<Blog />} />
@@ -53,6 +70,8 @@ const App = () => {
           <Route path="/blog/health" element={<Health />} />
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/contact" element={<ContactUs />} />
+
+          {/* Seller dashboard routes - protected by authentication */}
           <Route
             path="/seller"
             element={isSeller ? <SellerLayout /> : <SellerLogin />}
@@ -71,6 +90,8 @@ const App = () => {
           </Route>
         </Routes>
       </div>
+
+      {/* Conditionally render customer UI components for non-seller pages */}
       {isSellerPath ? null : <FloatingCart />}
       {isSellerPath ? null : <Footer />}
       {isSellerPath ? null : <BottomNav />}

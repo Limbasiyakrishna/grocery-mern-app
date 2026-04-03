@@ -25,7 +25,6 @@ const Navbar = () => {
   const {
     user,
     setUser,
-    showUserLogin,
     setShowUserLogin,
     navigate,
     searchQuery,
@@ -264,6 +263,9 @@ const Navbar = () => {
                 </li>
                 <li onClick={() => navigate("/add-address")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
                   My Addresses
+                </li>
+                <li onClick={() => navigate("/profile")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
+                  My Profile
                 </li>
                 <li onClick={logout} className="px-4 py-2 mx-2 rounded-xl hover:bg-red-50 hover:text-red-600 transition text-xs sm:text-sm font-black cursor-pointer mt-1 pt-3 border-t border-gray-100">
                   Sign Out

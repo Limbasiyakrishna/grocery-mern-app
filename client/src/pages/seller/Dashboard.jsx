@@ -1,11 +1,9 @@
 import { useAppContext } from "../../context/AppContext";
 import { useEffect, useState } from "react";
-import { assets } from "../../assets/assets";
 
 const Dashboard = () => {
-  const { products, axios } = useAppContext();
+  const { products, axios, navigate } = useAppContext();
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     try {
@@ -15,13 +13,12 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Failed to fetch orders", error);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totalSales = orders.reduce((acc, order) => acc + (order.status !== "Cancelled" ? order.amount : 0), 0);

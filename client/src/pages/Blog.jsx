@@ -58,7 +58,7 @@ const Blog = () => {
                             </button>
                         </div>
                     </div>
-                ))}}
+                ))}
             </div>
         </div>
     );

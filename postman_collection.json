@@ -1,0 +1,138 @@
+{
+  "info": {
+    "name": "Grocery MERN App API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Dummy payment endpoints + user auth for grocery-mern-app"
+  },
+  "item": [
+    {
+      "name": "1. Register User",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://127.0.0.1:5000/api/user/register", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "user", "register"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Register status 201 or 400', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([201,400]);",
+              "});",
+              "const data = pm.response.json();",
+              "if (data.success) {",
+              "  pm.environment.set('authToken', data.token);",
+              "  pm.environment.set('userId', data.user && (data.user._id || ''));",
+              "}" 
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login User",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://127.0.0.1:5000/api/user/login", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "user", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login status 200', function () { pm.response.to.have.property('code', 200); });",
+              "const cookieHeader = pm.response.headers.get('set-cookie');",
+              "if (cookieHeader) {",
+              "  const match = /token=([^;]+);/.exec(cookieHeader);",
+              "  if (match) pm.environment.set('authToken', match[1]);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Create Dummy Payment Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": { "raw": "http://127.0.0.1:5000/api/payment/dummy/create-order", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "payment", "dummy", "create-order"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"items\": [{\n    \"product\": \"000000000000000000000000\",\n    \"quantity\": 1,\n    \"price\": 100\n  }],\n  \"addressId\": \"000000000000000000000000\",\n  \"coupon\": null,\n  \"amount\": 100,\n  \"subtotal\": 100,\n  \"taxValue\": 0,\n  \"platformFee\": 0,\n  \"paymentType\": \"CARD\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Create order success', function () { pm.expect(pm.response.json().success).to.be.true; });",
+              "pm.environment.set('orderId', pm.response.json().orderId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Verify Dummy Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": { "raw": "http://127.0.0.1:5000/api/payment/dummy/verify", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "payment", "dummy", "verify"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": \"{{orderId}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Verify successful', function () { pm.expect(pm.response.json().success).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Get Payment Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": { "raw": "http://127.0.0.1:5000/api/payment/status/{{orderId}}", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "payment", "status", "{{orderId}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status loaded', function() { pm.expect(pm.response.json().success).to.be.true; });",
+              "pm.test('Payment is paid', function() { pm.expect(pm.response.json().isPaid).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+

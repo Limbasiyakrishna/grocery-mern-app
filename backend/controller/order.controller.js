@@ -3,21 +3,26 @@ import Product from "../models/product.model.js";
 import Address from "../models/address.model.js";
 import User from "../models/user.model.js";
 import Coupon from "../models/coupon.model.js";
-import { sendEmail, sendSMS } from "../utils/messageService.js";
+import { sendEmail, sendSMS, sendOrderConfirmationEmail } from "../utils/messageService.js";
 
-// Place order COD: /api/order/place
+/**
+ * Places a Cash on Delivery (COD) order for the authenticated user
+ * @param {Object} req - Express request object with order items, address, and optional coupon
+ * @param {Object} res - Express response object
+ */
 export const placeOrderCOD = async (req, res) => {
   try {
     const userId = req.user;
     const { items, address, couponCode } = req.body;
 
+    // Validate required fields
     if (!address || !items || items.length === 0) {
       return res
         .status(400)
         .json({ message: "Invalid order details", success: false });
     }
 
-    // Calculate subtotal
+    // Calculate subtotal and validate products
     let subtotal = 0;
     const itemsWithPrice = [];
 
@@ -37,11 +42,12 @@ export const placeOrderCOD = async (req, res) => {
       });
     }
 
-    // Tax Calculation (5%)
+    // Calculate tax (5%) and platform fee
     const TAX_RATE = 5;
     const taxValue = Math.floor((subtotal * TAX_RATE) / 100);
     const platformFee = 5;
 
+    // Initialize coupon discount
     let couponDiscount = {
       code: null,
       discountPercent: 0,
@@ -86,7 +92,7 @@ export const placeOrderCOD = async (req, res) => {
         });
       }
 
-      // Calculate discount
+      // Calculate discount amount
       let discountAmount = Math.floor((subtotal * coupon.discountPercent) / 100);
       if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
         discountAmount = coupon.maxDiscount;
@@ -112,7 +118,7 @@ export const placeOrderCOD = async (req, res) => {
       platformFee -
       couponDiscount.discountAmount;
 
-    // Create order
+    // Create order in database
     const newOrder = await Order.create({
       userId,
       items: itemsWithPrice,
@@ -127,7 +133,7 @@ export const placeOrderCOD = async (req, res) => {
       isPaid: false,
     });
 
-    // Send Notifications & Bill (Non-blocking)
+    // Send order confirmation notifications asynchronously (non-blocking)
     (async () => {
       try {
         const userDoc = await User.findById(userId);
@@ -145,87 +151,33 @@ export const placeOrderCOD = async (req, res) => {
         );
 
         if (userDoc && addressDoc) {
-          const orderIdShort = newOrder._id
-            .toString()
-            .slice(-6)
-            .toUpperCase();
-
-          // Build detailed bill email
-          const itemsTable = orderProducts
-            .map(
-              (item) =>
-                `${item.name}
-   Qty: ${item.quantity} × ₹${item.price} = ₹${item.total}`
-            )
-            .join("\n");
-
-          const billEmail = `Hi ${userDoc.name},
-
-🎉 Your FreshNest Order Confirmation & Invoice
-
-Order Number: #${orderIdShort}
-Order Date: ${new Date().toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-Status: Order Placed ✓
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📦 ITEMS ORDERED:
-${itemsTable}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💳 BILLING SUMMARY:
-Subtotal:           ₹${subtotal}
-${couponDiscount.discountAmount > 0 ? `Discount (${couponDiscount.code}):     -₹${couponDiscount.discountAmount}` : "Discount:          ₹0"}
-Tax (${TAX_RATE}%):                ₹${taxValue}
-Platform Fee:       ₹${platformFee}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOTAL AMOUNT:       ₹${finalAmount}
-
-Payment Method: Cash on Delivery (COD)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📍 DELIVERY ADDRESS:
-${addressDoc.firstName} ${addressDoc.lastName}
-${addressDoc.houseNo}, ${addressDoc.area}
-${addressDoc.street}
-${addressDoc.city}, ${addressDoc.state} - ${addressDoc.zipCode}
-Phone: ${addressDoc.phone}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🚚 DELIVERY DETAILS:
-Expected Delivery: 2-3 business days
-Tracking: You will receive a tracking link via SMS
-
-For any queries, contact us at support@freshnest.com
-
-Thank you for your order! 🌱
-FreshNest Team`;
-
-          // Send detailed bill email
-          sendEmail(
-            userDoc.email,
-            `✅ Order Confirmed & Invoice #${orderIdShort}`,
-            billEmail
-          ).catch((e) => {}); // Silent fail
+          // Send professional HTML order confirmation email
+          await sendOrderConfirmationEmail({
+            user: userDoc,
+            order: newOrder,
+            items: orderProducts,
+            address: addressDoc,
+            paymentType: "COD",
+            subtotal,
+            taxValue,
+            platformFee,
+            discount: couponDiscount,
+            totalAmount: finalAmount
+          }).catch((e) => {}); // Silent fail
 
           // Send SMS notification
           if (userDoc.phone) {
+            const orderIdShort = newOrder._id.toString().slice(-6).toUpperCase();
             const smsBody = `🎉 FreshNest Order Confirmed! Order #${orderIdShort} for ₹${finalAmount} will be delivered to ${addressDoc.city} in 2-3 days. Invoice sent to email.`;
             sendSMS(userDoc.phone, smsBody).catch((e) => {}); // Silent fail
           }
         }
       } catch (notifErr) {
-        // Silent
+        // Silent error handling for notifications
       }
     })();
 
+    // Return success response
     res.status(201).json({
       message: "Order placed successfully",
       success: true,
@@ -237,32 +189,47 @@ FreshNest Team`;
   }
 };
 
-// oredr details for individual user :/api/order/user
+/**
+ * Retrieves all orders for the authenticated user
+ * @param {Object} req - Express request object with authenticated user ID
+ * @param {Object} res - Express response object
+ */
 export const getUserOrders = async (req, res) => {
   try {
     const userId = req.user;
+
+    // Find orders that are either COD or paid
     const orders = await Order.find({
       userId,
       $or: [{ paymentType: "COD" }, { isPaid: true }],
     })
-      .populate("items.product address")
-      .sort({ createdAt: -1 });
+      .populate("items.product address") // Populate product and address details
+      .sort({ createdAt: -1 }); // Sort by newest first
+
     res.status(200).json({ success: true, orders });
   } catch (error) {
+    console.error("Error fetching user orders:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-// get all orders for admin :/api/order/all
+/**
+ * Retrieves all orders for admin view
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const getAllOrders = async (req, res) => {
   try {
+    // Find all orders that are either COD or paid
     const orders = await Order.find({
       $or: [{ paymentType: "COD" }, { isPaid: true }],
     })
-      .populate("items.product address")
-      .sort({ createdAt: -1 });
+      .populate("items.product address") // Populate product and address details
+      .sort({ createdAt: -1 }); // Sort by newest first
+
     res.status(200).json({ success: true, orders });
   } catch (error) {
+    console.error("Error fetching all orders:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

@@ -1,5 +1,3 @@
-import { useState, useEffect } from "react";
-import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext";
 import { getImgSrc } from "../utils/imgResolver";
 

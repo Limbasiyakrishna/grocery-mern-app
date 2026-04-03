@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 
 const MysteryBox = () => {
-    const { products, addToCart, navigate } = useAppContext();
+    const { products, addToCart } = useAppContext();
 
     const handleUnlock = () => {
         const boxProduct = products.find(p => p.name === "Weekly Mystery Box");

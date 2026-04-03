@@ -2,30 +2,26 @@ import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import Address from "../models/address.model.js";
 import User from "../models/user.model.js";
-import Coupon from "../models/coupon.model.js";
-import crypto from "crypto";
-import axios from "axios";
-import QRCode from "qrcode";
 import { sendEmail, sendSMS } from "../utils/messageService.js";
 
-// PhonePe Configuration
-const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID || "MOCK_MERCHANT_ID";
-const PHONEPE_API_KEY = process.env.PHONEPE_API_KEY || "MOCK_API_KEY";
-const PHONEPE_SALT_KEY = process.env.PHONEPE_SALT_KEY || "MOCK_SALT_KEY";
-const PHONEPE_BASE_URL = process.env.NODE_ENV === "production" 
-  ? "https://api.phonepe.com/apis/hermes"
-  : "https://api-sandbox.phonepe.com/apis/hermes";
+// Dummy payment module: accepts all payment methods, no external gateway
 
-// Helper for sending order notifications
+/**
+ * Sends order confirmation notifications via email and SMS
+ * @param {string} orderId - The ID of the order to notify about
+ */
 const sendOrderNotifications = async (orderId) => {
   try {
+    // Fetch order details
     const order = await Order.findById(orderId);
     if (!order) return;
 
+    // Fetch user and address details
     const userDoc = await User.findById(order.userId);
     const addressDoc = await Address.findById(order.address);
     if (!userDoc || !addressDoc) return;
 
+    // Prepare product details for the email
     const orderProducts = await Promise.all(
       order.items.map(async (item) => {
         const product = await Product.findById(item.product);
@@ -39,12 +35,14 @@ const sendOrderNotifications = async (orderId) => {
     );
 
     const orderIdShort = order._id.toString().slice(-6).toUpperCase();
-    const TAX_RATE = 5; // Default 5%
+    const TAX_RATE = 5; // Default tax rate in percentage
 
+    // Format items for email
     const itemsTable = orderProducts
       .map((item) => `${item.name}\n   Qty: ${item.quantity} × ₹${item.price} = ₹${item.total}`)
       .join("\n");
 
+    // Compose email content with billing details
     const billEmail = `Hi ${userDoc.name},
 
 🎉 Your FreshNest Order Confirmation & Invoice
@@ -66,8 +64,8 @@ ${itemsTable}
 
 💳 BILLING SUMMARY:
 Subtotal:           ₹${order.subtotal}
-${order.coupon && order.coupon.discountAmount > 0 
-  ? `Discount (${order.coupon.code}):     -₹${order.coupon.discountAmount}` 
+${order.coupon && order.coupon.discountAmount > 0
+  ? `Discount (${order.coupon.code}):     -₹${order.coupon.discountAmount}`
   : "Discount:          ₹0"}
 Tax (${TAX_RATE}%):                ₹${order.taxValue}
 Platform Fee:       ₹${order.platformFee}
@@ -96,363 +94,38 @@ For any queries, contact us at support@freshnest.com
 Thank you for your order! 🌱
 The FreshNest Team`;
 
-    // Send Detailed Email
-    sendEmail(
-      userDoc.email,
-      `✅ Order Confirmed & Invoice #${orderIdShort}`,
-      billEmail
-    ).catch((e) => {}); // Silent fail
+    // Send detailed email invoice
+    // NOTE: Email is now sent by order.controller.js using sendOrderConfirmationEmail
+    // This prevents duplicate emails
+    console.log(`[📧 Order Email]: Already sent by order controller for order ${orderIdShort}`);
 
-    // Send SMS
+    // Send SMS notification if phone number is available
     if (userDoc.phone) {
       const smsBody = `🎉 FreshNest Order Confirmed! Order #${orderIdShort} for ₹${order.amount} will be delivered to ${addressDoc.city} in 2-3 days. Invoice sent to email.`;
-      sendSMS(userDoc.phone, smsBody).catch((e) => {}); // Silent fail
+      sendSMS(userDoc.phone, smsBody).catch((e) => {}); // Silent fail on SMS error
     }
   } catch (err) {
-    // Silent
+    // Silent error handling to avoid disrupting payment flow
   }
 };
 
-// Create PhonePe Payment Order
-export const createPhonePeOrder = async (req, res) => {
-  try {
-    const { userId, items, address, coupon, amount, subtotal, taxValue, platformFee } =
-      req.body;
-
-    if (!userId || !items || !address || !amount) {
-      return res.json({ success: false, message: "Missing required fields" });
-    }
-
-    // Generate transaction ID
-    const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create order in database (pending payment)
-    const order = new Order({
-      userId,
-      items,
-      address,
-      coupon: coupon || {},
-      amount,
-      subtotal,
-      taxValue,
-      platformFee,
-      paymentType: "PHONEPE",
-      isPaid: false,
-      status: "Awaiting Payment",
-    });
-
-    await order.save();
-
-    // Prepare PhonePe request
-    const payload = {
-      merchantId: PHONEPE_MERCHANT_ID,
-      merchantTransactionId: transactionId,
-      merchantUserId: userId,
-      amount: Math.round(amount * 100), // Convert to paise
-      redirectUrl: `${process.env.FRONTEND_URL}/payment-callback?orderId=${order._id}&txnId=${transactionId}`,
-      redirectMode: "REDIRECT",
-      callbackUrl: `${process.env.BACKEND_URL}/api/payment/phonepe/callback`,
-      mobileNumber: "9999999999",
-      paymentInstrument: {
-        type: "PAYMENT_LINK",
-      },
-    };
-
-    // Create checksum
-    const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64");
-    const checksum = crypto
-      .createHmac("sha256", PHONEPE_SALT_KEY)
-      .update(payloadBase64 + "/pg/v1/pay" + PHONEPE_SALT_KEY)
-      .digest("hex") + "###1";
-
-    // Call PhonePe API
-    const response = await axios.post(
-      `${PHONEPE_BASE_URL}/pg/v1/pay`,
-      {
-        request: payloadBase64,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-VERIFY": checksum,
-          "X-MERCHANT-ID": PHONEPE_MERCHANT_ID,
-        },
-      }
-    );
-
-    if (response.data.success) {
-      res.json({
-        success: true,
-        redirectUrl: response.data.data.instrumentResponse.redirectUrl,
-        transactionId,
-        orderId: order._id,
-      });
-    } else {
-      res.json({
-        success: false,
-        message: response.data.message || "Failed to create payment",
-      });
-    }
-  } catch (error) {
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// PhonePe Callback Handler
-export const handlePhonePeCallback = async (req, res) => {
-  try {
-    const { transactionId } = req.body;
-
-    if (!transactionId) {
-      return res.json({ success: false, message: "Transaction ID missing" });
-    }
-
-    // Verify transaction status with PhonePe
-    const checksum = crypto
-      .createHmac("sha256", PHONEPE_SALT_KEY)
-      .update(`/pg/v1/status/${PHONEPE_MERCHANT_ID}/${transactionId}${PHONEPE_SALT_KEY}`)
-      .digest("hex") + "###1";
-
-    const response = await axios.get(
-      `${PHONEPE_BASE_URL}/pg/v1/status/${PHONEPE_MERCHANT_ID}/${transactionId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-VERIFY": checksum,
-          "X-MERCHANT-ID": PHONEPE_MERCHANT_ID,
-        },
-      }
-    );
-
-    if (response.data.success && response.data.data.responseCode === "PAYMENT_SUCCESS") {
-      res.json({
-        success: true,
-        message: "Payment verified successfully",
-      });
-    } else {
-      res.json({
-        success: false,
-        message: "Payment verification failed",
-      });
-    }
-  } catch (error) {
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Verify PhonePe Payment from Frontend
-export const verifyPhonePePayment = async (req, res) => {
-  try {
-    const { orderId, transactionId } = req.body;
-
-    if (!orderId || !transactionId) {
-      return res.json({ success: false, message: "Missing payment verification data" });
-    }
-
-    // Verify transaction status with PhonePe
-    const checksum = crypto
-      .createHmac("sha256", PHONEPE_SALT_KEY)
-      .update(`/pg/v1/status/${PHONEPE_MERCHANT_ID}/${transactionId}${PHONEPE_SALT_KEY}`)
-      .digest("hex") + "###1";
-
-    const response = await axios.get(
-      `${PHONEPE_BASE_URL}/pg/v1/status/${PHONEPE_MERCHANT_ID}/${transactionId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-VERIFY": checksum,
-          "X-MERCHANT-ID": PHONEPE_MERCHANT_ID,
-        },
-      }
-    );
-
-    if (response.data.success && response.data.data.responseCode === "PAYMENT_SUCCESS") {
-      // Update order in database
-      const order = await Order.findByIdAndUpdate(
-        orderId,
-        { isPaid: true, status: "Order Placed" },
-        { new: true }
-      );
-
-      if (!order) {
-        return res.json({ success: false, message: "Order not found" });
-      }
-
-      // Trigger notification (non-blocking)
-      sendOrderNotifications(order._id);
-
-      res.json({
-        success: true,
-        message: "Payment verified successfully",
-        orderId: order._id,
-        amount: order.amount,
-      });
-    } else {
-      res.json({
-        success: false,
-        message: "Payment verification failed",
-      });
-    }
-  } catch (error) {
-    console.error("Payment verification error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Generate UPI QR Code
-export const generateUPIQRCode = async (req, res) => {
-  try {
-    const { amount, orderId } = req.body;
-
-    if (!amount || !orderId) {
-      return res.json({ success: false, message: "Missing required fields" });
-    }
-
-    // Format: upi://pay?pa=merchantUPI&pn=merchantName&am=amount&tn=description&tr=transactionRef
-    const upiString = `upi://pay?pa=${process.env.UPI_ID}&pn=${encodeURIComponent(
-      "FreshNest"
-    )}&am=${amount}&tn=${encodeURIComponent(`Order ${orderId}`)}&tr=${orderId}`;
-
-    // Generate QR code
-    const qrCode = await QRCode.toDataURL(upiString);
-
-    res.json({
-      success: true,
-      qrCode,
-      upiId: process.env.UPI_ID,
-      amount,
-      orderId,
-    });
-  } catch (error) {
-    console.error("QR code generation error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Create UPI Payment Order
-export const createUPIPaymentOrder = async (req, res) => {
-  try {
-    const { userId, items, addressId, coupon, amount, subtotal, taxValue, platformFee } =
-      req.body;
-
-    if (!userId || !items || !addressId || !amount) {
-      return res.json({ success: false, message: "Missing required fields" });
-    }
-
-    // Create order in database (pending payment)
-    const order = new Order({
-      userId,
-      items,
-      address: addressId,
-      coupon: coupon || {},
-      amount,
-      subtotal,
-      taxValue,
-      platformFee,
-      paymentType: "UPI",
-      isPaid: false,
-      status: "Awaiting Payment",
-    });
-
-    await order.save();
-
-    res.json({
-      success: true,
-      orderId: order._id,
-      amount: order.amount,
-      message: "Please complete payment via UPI QR code",
-    });
-  } catch (error) {
-    console.error("UPI order creation error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Confirm UPI Payment (manual confirmation after scanning QR)
-export const confirmUPIPayment = async (req, res) => {
-  try {
-    const { orderId } = req.body;
-
-    if (!orderId) {
-      return res.json({ success: false, message: "Order ID is required" });
-    }
-
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      { isPaid: true, status: "Order Placed" },
-      { new: true }
-    );
-
-    if (!order) {
-      return res.json({ success: false, message: "Order not found" });
-    }
-
-    // Trigger notification (non-blocking)
-    sendOrderNotifications(order._id);
-
-    res.json({
-      success: true,
-      message: "Payment confirmed",
-      orderId: order._id,
-    });
-  } catch (error) {
-    console.error("Payment confirmation error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Create COD Order (Cash on Delivery)
-export const createCODOrder = async (req, res) => {
-  try {
-    const { userId, items, addressId, coupon, amount, subtotal, taxValue, platformFee } =
-      req.body;
-
-    if (!userId || !items || !addressId || !amount) {
-      return res.json({ success: false, message: "Missing required fields" });
-    }
-
-    const order = new Order({
-      userId,
-      items,
-      address: addressId,
-      coupon: coupon || {},
-      amount,
-      subtotal,
-      taxValue,
-      platformFee,
-      paymentType: "COD",
-      isPaid: false,
-      status: "Order Placed",
-    });
-
-    await order.save();
-
-    // Trigger notification (non-blocking)
-    sendOrderNotifications(order._id);
-
-    res.json({
-      success: true,
-      message: "Order placed successfully with COD",
-      orderId: order._id,
-      amount: order.amount,
-    });
-  } catch (error) {
-    console.error("COD order creation error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Get Payment Status
+/**
+ * Retrieves the payment status of an order
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const getPaymentStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
 
+    // Find the order by ID
     const order = await Order.findById(orderId);
 
     if (!order) {
       return res.json({ success: false, message: "Order not found" });
     }
 
+    // Return order payment details
     res.json({
       success: true,
       orderId: order._id,
@@ -466,17 +139,39 @@ export const getPaymentStatus = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
-// Create Dummy Payment Order (For Testing)
+
+/**
+ * Creates a dummy payment order that accepts any payment type
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const createDummyOrder = async (req, res) => {
   try {
-    const { userId, items, addressId, coupon, amount, subtotal, taxValue, platformFee } =
-      req.body;
+    const {
+      userId,
+      items,
+      addressId,
+      coupon,
+      amount,
+      subtotal,
+      taxValue,
+      platformFee,
+      paymentType,
+    } = req.body;
 
+    // Validate required fields
     if (!userId || !items || !addressId || !amount) {
       return res.json({ success: false, message: "Missing required fields" });
     }
 
-    // Create order in database (pending payment)
+    // Normalize and validate payment type
+    const normalizedPaymentType = (paymentType || "DUMMY").toString().trim().toUpperCase();
+    const acceptedMethods = ["DUMMY", "COD", "CARD", "UPI", "NETBANKING", "WALLET", "BANKTRANSFER", "BHIM", "PAYTM"];
+    const finalPaymentType = acceptedMethods.includes(normalizedPaymentType)
+      ? normalizedPaymentType
+      : "DUMMY";
+
+    // Create order in database with pending payment status
     const order = new Order({
       userId,
       items,
@@ -486,18 +181,20 @@ export const createDummyOrder = async (req, res) => {
       subtotal,
       taxValue,
       platformFee,
-      paymentType: "DUMMY",
+      paymentType: finalPaymentType,
       isPaid: false,
       status: "Awaiting Payment",
     });
 
     await order.save();
 
+    // Return success response with order details
     res.json({
       success: true,
-      message: "Dummy payment processed successfully",
+      message: `Dummy order created with paymentType ${finalPaymentType}`,
       orderId: order._id,
       amount: order.amount,
+      paymentType: finalPaymentType,
     });
   } catch (error) {
     console.error("Dummy order creation error:", error);
@@ -505,15 +202,21 @@ export const createDummyOrder = async (req, res) => {
   }
 };
 
-// Verify Dummy Payment
+/**
+ * Verifies and completes a dummy payment by updating order status
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const verifyDummyPayment = async (req, res) => {
   try {
     const { orderId } = req.body;
 
+    // Validate order ID
     if (!orderId) {
       return res.json({ success: false, message: "Order ID is required" });
     }
 
+    // Update order to paid and placed status
     const order = await Order.findByIdAndUpdate(
       orderId,
       { isPaid: true, status: "Order Placed" },
@@ -524,9 +227,10 @@ export const verifyDummyPayment = async (req, res) => {
       return res.json({ success: false, message: "Order not found" });
     }
 
-    // Trigger notification (non-blocking)
+    // Send order notifications asynchronously
     sendOrderNotifications(order._id);
 
+    // Return success response
     res.json({
       success: true,
       message: "Payment verified successfully (Dummy)",

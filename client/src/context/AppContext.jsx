@@ -32,7 +32,33 @@ export const AppContextProvider = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [collaborationId, setCollaborationId] = useState(null);
   const [participantCount, setParticipantCount] = useState(1);
-  const [isCartsSyncing, setIsCartsSyncing] = useState(false);
+
+  // Theme management
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage for saved theme preference
+    const savedTheme = localStorage.getItem('freshnest-theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    // Default to light mode
+    return false;
+  });
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem('freshnest-theme', newTheme ? 'dark' : 'light');
+  };
+
+  // Apply theme to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // check seller status
   const fetchSeller = async () => {
@@ -44,6 +70,7 @@ export const AppContextProvider = ({ children }) => {
         setIsSeller(false);
       }
     } catch (error) {
+      console.error("Error fetching seller status", error);
       setIsSeller(false);
     }
   };
@@ -61,6 +88,7 @@ export const AppContextProvider = ({ children }) => {
       }
     } catch (error) {
       // Handle auth error quietly
+      console.error("Error fetching user", error);
     }
   };
 
@@ -75,6 +103,7 @@ export const AppContextProvider = ({ children }) => {
         setProducts(dummyProducts);
       }
     } catch (error) {
+      console.error("Error fetching products", error);
       setProducts(dummyProducts);
     }
   };
@@ -153,6 +182,7 @@ export const AppContextProvider = ({ children }) => {
         }
       }
     } catch (error) {
+      console.error("Error syncing shared cart", error);
       // Sync error handled quietly or via toast if critical
     }
   };
@@ -230,6 +260,7 @@ export const AppContextProvider = ({ children }) => {
         await fetchUser(); // reload personal cart
       }
     } catch (error) {
+      console.error("Error leaving collaboration", error);
       toast.error("Failed to leave collaboration");
     }
   };
@@ -260,7 +291,9 @@ export const AppContextProvider = ({ children }) => {
     syncSharedCart,
     startCollaboration,
     joinCollaboration,
-    leaveCollaboration
+    leaveCollaboration,
+    isDarkMode,
+    toggleTheme
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

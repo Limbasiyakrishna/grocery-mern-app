@@ -23,6 +23,9 @@ const userSchema = new mongoose.Schema(
     // OTP Fields for login
     otpCode: { type: String, default: null },
     otpExpiry: { type: Date, default: null },
+    // Password reset fields
+    resetToken: { type: String, default: null },
+    resetTokenExpiry: { type: Date, default: null },
   },
   { minimize: false }
 );

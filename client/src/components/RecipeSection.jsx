@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import { getImgSrc } from '../utils/imgResolver';
@@ -28,7 +28,6 @@ const recipes = [
 
 const RecipeSection = () => {
     const { addToCart, products } = useAppContext();
-    const [activeRecipe, setActiveRecipe] = useState(null);
 
     const handleBuyAll = (ingredientNames) => {
         let addedCount = 0;

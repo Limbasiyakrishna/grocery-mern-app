@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 
 const SellerLayout = () => {
-  const { isSeller, setIsSeller, axios, navigate, products } = useAppContext();
+  const { setIsSeller, axios, navigate, products } = useAppContext();
   const [collapsed, setCollapsed] = useState(false);
 
   const sidebarLinks = [

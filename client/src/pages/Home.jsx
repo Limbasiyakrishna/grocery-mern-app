@@ -14,7 +14,7 @@ const Home = () => {
   return (
     <div className="pt-4 pb-16 min-h-screen">
       {/* 🏙️ Floating Premium Ticker (Integrated) */}
-      <div className="mx-auto max-w-7xl mb-12">
+      <div className="mx-auto max-w-7xl mb-12 px-4 sm:px-6 lg:px-8">
         <div className="relative glass-dark rounded-[2rem] py-3.5 px-6 overflow-hidden border-emerald-500/20 shadow-xl group">
           <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-30 animate-pulse"></div>
           

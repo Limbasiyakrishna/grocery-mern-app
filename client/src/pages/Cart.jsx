@@ -8,7 +8,6 @@ const Cart = () => {
   const {
     products,
     navigate,
-    cartCount,
     totalCartAmount,
     cartItems,
     setCartItems,
@@ -22,9 +21,7 @@ const Cart = () => {
   const [cartArray, setCartArray] = useState([]);
   const [addressList, setAddressList] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [paymentOption, setPaymentOption] = useState("razorpay");
   const [couponCode, setCouponCode] = useState("");
-  const [couponDiscount, setCouponDiscount] = useState(null);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState([]);
@@ -98,12 +95,11 @@ const Cart = () => {
     setShowPaymentGateway(true);
   };
 
-  const handlePaymentSuccess = (orderId, paymentType) => {
+  const handlePaymentSuccess = () => {
     toast.success("🎉 Order Placed Successfully!");
     toast.success("📧 Invoice sent to your email");
     setCartItems({});
     setCouponCode("");
-    setCouponDiscount(null);
     setAppliedCoupon(null);
     setShowPaymentGateway(false);
     navigate("/my-orders");
@@ -123,7 +119,6 @@ const Cart = () => {
       });
 
       if (data.success) {
-        setCouponDiscount(data);
         setAppliedCoupon({
           code: data.code,
           discountAmount: data.discountAmount,
@@ -144,7 +139,6 @@ const Cart = () => {
 
   const handleRemoveCoupon = () => {
     setCouponCode("");
-    setCouponDiscount(null);
     setAppliedCoupon(null);
     toast.success("Coupon removed");
   };
@@ -332,6 +326,9 @@ const Cart = () => {
                 )}
 
                 {/* Available Coupons Section */}
+                {couponsLoading && (
+                  <div className="mb-4 text-[10px] text-blue-600 font-semibold">Loading coupons...</div>
+                )}
                 {availableCoupons.length > 0 && !appliedCoupon && (
                   <div className="mb-4 sm:mb-6 md:mb-8 p-2.5 sm:p-3 md:p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg sm:rounded-xl md:rounded-2xl border-2 border-yellow-200">
                     <p className="text-[8px] sm:text-[9px] md:text-xs font-black text-yellow-800 uppercase mb-3 sm:mb-4 tracking-widest">🎟️ Available Coupons</p>

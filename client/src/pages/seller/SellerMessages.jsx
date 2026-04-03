@@ -54,6 +54,7 @@ const SellerMessages = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchMessages(); }, []);
 
   const markRead = async (id) => {
@@ -149,7 +150,7 @@ const SellerMessages = () => {
       </header>
 
       <main className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden flex flex-col lg:flex-row h-[750px]">
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden flex flex-col lg:flex-row min-h-[600px] lg:h-[750px]">
           
           {/* ── Left Sidebar: Message List ────────────────────────────────── */}
           <aside className="lg:w-[380px] border-r border-gray-50 flex flex-col bg-gray-50/30">

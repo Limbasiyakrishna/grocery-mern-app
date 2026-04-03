@@ -1,18 +1,25 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { sendEmail } from "../utils/messageService.js";
+import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, sendOTPEmail } from "../utils/messageService.js";
 
-// register user: /api/user/register
+/**
+ * Registers a new user with email, name, and password
+ * @param {Object} req - Express request object containing user data
+ * @param {Object} res - Express response object
+ */
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
+    // Validate required fields
     if (!name || !email || !password) {
       return res
         .status(400)
         .json({ message: "Please fill all the fields", success: false });
     }
 
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
@@ -20,30 +27,37 @@ export const registerUser = async (req, res) => {
         .json({ message: "User already exists", success: false });
     }
 
+    // Hash password for security
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
     const user = new User({
       name,
       email,
       password: hashedPassword,
     });
     await user.save();
+
+    // Generate JWT token for authentication
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
+    // Set secure HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
       secure: process.env.NODE_ENV === "production", // Use secure cookies in production
       sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict", // Prevent CSRF attacks
       maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie expiration time (7 days)
     });
-    
-    // Welcome Email (fire-and-forget)
-    sendEmail(
-      email, 
-      "Welcome to FreshNest! 🌱", 
-      `Hi ${name},\n\nWe're thrilled to have you! Dive into farm-fresh groceries, explore our latest recipes, and let us bring the best of nature to your doorstep.\n\nHappy Shopping!`
-    ).catch(e => {}); // Silent fail
+
+    // Send welcome email asynchronously (fire-and-forget)
+    sendWelcomeEmail({
+      name,
+      email
+    }).catch(e => {}); // Silent fail to avoid blocking response
+
+    // Return success response
     res.status(201).json({
       message: "User registered successfully",
       success: true,
@@ -54,21 +68,28 @@ export const registerUser = async (req, res) => {
       token,
     });
   } catch (error) {
+    console.error("Registration error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-// login user: /api/user/login
-
+/**
+ * Authenticates a user with email and password
+ * @param {Object} req - Express request object containing login credentials
+ * @param {Object} res - Express response object
+ */
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate required fields
     if (!email || !password) {
       return res
         .status(400)
         .json({ message: "Please fill all the fields", success: false });
     }
+
+    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res
@@ -76,21 +97,28 @@ export const loginUser = async (req, res) => {
         .json({ message: "User does not exist", success: false });
     }
 
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res
         .status(400)
         .json({ message: "Invalid credentials", success: false });
     }
+
+    // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+
+    // Set authentication cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
+    // Return success response
     res.status(200).json({
       message: "Successfully logged in",
       success: true,
@@ -100,117 +128,187 @@ export const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-// check auth : /api/user/is-auth
+/**
+ * Verifies user authentication status using JWT token
+ * @param {Object} req - Express request object with authenticated user ID
+ * @param {Object} res - Express response object
+ */
 export const checkAuth = async (req, res) => {
   try {
     const userId = req.user;
 
+    // Find user and exclude password from response
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res
         .status(404)
         .json({ message: "User not found", success: false });
     }
+
+    // Return user data
     res.status(200).json({
       success: true,
       user,
     });
   } catch (error) {
+    console.error("Auth check error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-// logout user: /api/user/logout
+
+/**
+ * Logs out user by clearing authentication cookie
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 export const logout = async (req, res) => {
   try {
+    // Clear authentication cookie
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict",
     });
+
+    // Return success response
     return res.status(200).json({
       message: "Logged out successfully",
       success: true,
     });
   } catch (error) {
+    console.error("Logout error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
-};// forgot password: /api/user/forgot-password
+};
+
+/**
+ * Initiates password reset by sending verification code to email
+ * @param {Object} req - Express request object containing email
+ * @param {Object} res - Express response object
+ */
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+
+    // Validate email
     if (!email) {
       return res.status(400).json({ message: "Please provide email", success: false });
     }
+
+    // Find user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found", success: false });
     }
 
-    // Generate a temporary reset token (6-digit code for simplicity, or JWT)
-    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // In a real production app, we would save this token in the DB with an expiry.
-    // For this implementation, we'll continue with the email-based flow.
-    const resetMsg = `Hi ${user.name},
+    // Generate secure reset token
+    const resetToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" } // Token expires in 15 minutes
+    );
 
-We received a request to reset your FreshNest password.
+    // Store reset token in user document (in production, use Redis or separate collection)
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
+    await user.save();
 
-Your verification code is: ${resetToken}
+    // Send professional password reset email
+    await sendPasswordResetEmail({
+      email,
+      resetToken,
+      userName: user.name
+    });
 
-If you didn't request this, please ignore this email.`;
-    
-    await sendEmail(email, "FreshNest Password Reset Request", resetMsg);
-
+    // Return success with user ID for frontend
     res.status(200).json({
       message: "Verification code sent to your email",
       success: true,
-      // We still return the userId for the frontend to know which user to update 
-      // but we don't call it a 'secret token' anymore.
       userId: user._id
     });
   } catch (error) {
+    console.error("Forgot password error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// reset password: /api/user/reset-password
+/**
+ * Resets user password using verification code
+ * @param {Object} req - Express request object containing userId and new password
+ * @param {Object} res - Express response object
+ */
 export const resetPassword = async (req, res) => {
   try {
-    const { userId, newPassword } = req.body;
-    if (!userId || !newPassword) {
+    const { token, newPassword } = req.body;
+
+    // Validate required fields
+    if (!token || !newPassword) {
       return res.status(400).json({ message: "Missing required fields", success: false });
     }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await User.findByIdAndUpdate(userId, { password: hashedPassword });
 
+    // Verify reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid or expired reset token", success: false });
+    }
+
+    // Find user by decoded ID
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found", success: false });
+    }
+
+    // Check if token matches and hasn't expired
+    if (user.resetToken !== token || user.resetTokenExpiry < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired reset token", success: false });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password and clear reset token
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+
+    // Return success response
     res.status(200).json({
       message: "Password updated successfully",
       success: true
     });
   } catch (error) {
+    console.error("Reset password error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// ── OTP Login Flow ────────────────────────────────────────────────────────────
-
-// send OTP: /api/user/send-otp
+/**
+ * Sends OTP (One-Time Password) to user email for login
+ * @param {Object} req - Express request object containing email
+ * @param {Object} res - Express response object
+ */
 export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
+
+    // Validate email
     if (!email) {
       return res.status(400).json({ message: "Email is required", success: false });
     }
 
+    // Find or create user for OTP login
     let user = await User.findOne({ email });
-    
-    // If user doesn't exist, create one (for new users via OTP)
+
+    // If user doesn't exist, create one with random password
     if (!user) {
-      // For first-time OTP login, we create a user with random password
       const randomPassword = Math.random().toString(36).slice(-10);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
       user = new User({
@@ -220,54 +318,60 @@ export const sendOTP = async (req, res) => {
       });
     }
 
-    // Generate 6-digit OTP
+    // Generate 6-digit OTP with 10-minute expiry
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+    // Save OTP to user
     user.otpCode = otp;
     user.otpExpiry = otpExpiry;
     await user.save();
 
-    // Send OTP via email
-    const otpMsg = `Hi ${user.name},
+    // Send OTP email
+    await sendOTPEmail({
+      email,
+      otp,
+      userName: user.name
+    });
 
-Your FreshNest OTP for login is: ${otp}
-
-This code will expire in 10 minutes.
-
-If you didn't request this, please ignore this email.`;
-
-    await sendEmail(email, "🔐 Your FreshNest Login OTP", otpMsg);
-
+    // Return success with user ID
     res.status(200).json({
       message: "OTP sent to your email",
       success: true,
       userId: user._id.toString(),
     });
   } catch (error) {
+    console.error("Send OTP error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-// verify OTP: /api/user/verify-otp
+/**
+ * Verifies OTP and logs in user
+ * @param {Object} req - Express request object containing userId and OTP
+ * @param {Object} res - Express response object
+ */
 export const verifyOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
+
+    // Validate required fields
     if (!userId || !otp) {
       return res.status(400).json({ message: "User ID and OTP required", success: false });
     }
 
+    // Find user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found", success: false });
     }
 
-    // Check if OTP is valid
+    // Verify OTP code
     if (user.otpCode !== otp) {
       return res.status(400).json({ message: "Invalid OTP", success: false });
     }
 
-    // Check if OTP has expired
+    // Check OTP expiry
     if (new Date() > user.otpExpiry) {
       return res.status(400).json({ message: "OTP has expired", success: false });
     }
@@ -281,6 +385,7 @@ export const verifyOTP = async (req, res) => {
       expiresIn: "7d",
     });
 
+    // Set authentication cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -288,6 +393,7 @@ export const verifyOTP = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // Return success response
     res.status(200).json({
       message: "Login successful",
       success: true,
@@ -298,6 +404,7 @@ export const verifyOTP = async (req, res) => {
       token,
     });
   } catch (error) {
+    console.error("Verify OTP error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
