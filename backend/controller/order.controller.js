@@ -163,7 +163,9 @@ export const placeOrderCOD = async (req, res) => {
             platformFee,
             discount: couponDiscount,
             totalAmount: finalAmount
-          }).catch((e) => {}); // Silent fail
+          }).catch((e) => {
+            console.error(`[📩 Email ERROR]: Failed to send order confirmation: ${e.message}`);
+          });
 
           // Send SMS notification
           if (userDoc.phone) {

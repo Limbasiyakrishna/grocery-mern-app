@@ -20,10 +20,12 @@ const ProductCard = ({ product }) => {
               {Math.round(((product.price - product.offerPrice) / product.price) * 100)}% OFF
             </div>
           )}
-          <img
+<img
             className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
             src={getImgSrc(product.image?.[0])}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
           />
         </div>
 

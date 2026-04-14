@@ -63,7 +63,7 @@ const ContactUs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 py-8 sm:py-12 md:py-16 px-3 sm:px-4 md:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 py-8 sm:py-12 md:py-16 px-3 sm:px-4 md:px-6 page-bottom-padding">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12 md:mb-16 lg:mb-20 animate-fade-in">
         <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-[8px] sm:text-xs font-bold uppercase tracking-widest px-3 sm:px-4 py-1 sm:py-2 rounded-full mb-2 sm:mb-4">

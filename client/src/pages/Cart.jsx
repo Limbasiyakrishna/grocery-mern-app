@@ -154,7 +154,7 @@ const Cart = () => {
   if (products.length === 0) return <div className="h-screen flex items-center justify-center animate-pulse text-emerald-600 font-black text-sm sm:text-base md:text-lg">Loading Basket...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 md:pb-0">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-0 page-bottom-padding">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-100 py-3 md:py-4 px-3 sm:px-4 md:px-6">
         <div className="max-w-7xl mx-auto">
@@ -192,7 +192,7 @@ const Cart = () => {
                   >
                     {/* Product Image */}
                     <div className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 bg-gray-50 rounded-lg md:rounded-2xl p-1.5 sm:p-2 md:p-3 flex items-center justify-center shrink-0 border border-gray-50">
-                       <img src={getImgSrc(item.image[0])} className="w-full h-full object-contain mix-blend-multiply" alt={item.name} />
+<img src={getImgSrc(item.image[0])} className="w-full h-full object-contain mix-blend-multiply" alt={item.name} loading="lazy" decoding="async" />
                     </div>
                     
                     {/* Product Info */}
@@ -272,7 +272,7 @@ const Cart = () => {
 
         {/* RIGHT: Price Summary (Bottom on mobile, Sticky on desktop) */}
         <div className="lg:w-96 lg:mt-10">
-           <div className="sticky bottom-0 lg:bottom-auto lg:top-32 bg-white lg:bg-white border-t-4 lg:border-t-0 lg:border-t-0 border-emerald-100 lg:border-2 lg:border-emerald-50 rounded-t-2xl sm:rounded-t-3xl lg:rounded-3xl p-4 sm:p-5 md:p-8 shadow-2xl shadow-emerald-900/10 relative overflow-hidden">
+           <div className="lg:sticky lg:top-32 bg-white border-t-4 lg:border-t-0 border-emerald-100 lg:border-2 lg:border-emerald-50 rounded-t-2xl sm:rounded-t-3xl lg:rounded-3xl p-4 sm:p-5 md:p-8 shadow-2xl shadow-emerald-900/10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 md:w-24 md:h-24 bg-emerald-50 rounded-full blur-2xl -mr-8 sm:-mr-10 md:-mr-10 -mt-8 md:-mt-10"></div>
               
               <div className="relative z-10">

@@ -2,7 +2,7 @@ import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import Address from "../models/address.model.js";
 import User from "../models/user.model.js";
-import { sendEmail, sendSMS } from "../utils/messageService.js";
+import { sendEmail, sendSMS, sendOrderConfirmationEmail } from "../utils/messageService.js";
 
 // Dummy payment module: accepts all payment methods, no external gateway
 
@@ -35,69 +35,24 @@ const sendOrderNotifications = async (orderId) => {
     );
 
     const orderIdShort = order._id.toString().slice(-6).toUpperCase();
-    const TAX_RATE = 5; // Default tax rate in percentage
 
-    // Format items for email
-    const itemsTable = orderProducts
-      .map((item) => `${item.name}\n   Qty: ${item.quantity} × ₹${item.price} = ₹${item.total}`)
-      .join("\n");
-
-    // Compose email content with billing details
-    const billEmail = `Hi ${userDoc.name},
-
-🎉 Your FreshNest Order Confirmation & Invoice
-
-Order Number: #${orderIdShort}
-Order Date: ${new Date(order.createdAt).toLocaleDateString("en-IN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })}
-Status: Order Placed ✓
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📦 ITEMS ORDERED:
-${itemsTable}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💳 BILLING SUMMARY:
-Subtotal:           ₹${order.subtotal}
-${order.coupon && order.coupon.discountAmount > 0
-  ? `Discount (${order.coupon.code}):     -₹${order.coupon.discountAmount}`
-  : "Discount:          ₹0"}
-Tax (${TAX_RATE}%):                ₹${order.taxValue}
-Platform Fee:       ₹${order.platformFee}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOTAL AMOUNT:       ₹${order.amount}
-
-Payment Method: ${order.paymentType}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📍 DELIVERY ADDRESS:
-${addressDoc.firstName} ${addressDoc.lastName}
-${addressDoc.houseNo}, ${addressDoc.area}
-${addressDoc.street}
-${addressDoc.city}, ${addressDoc.state} - ${addressDoc.zipCode}
-Phone: ${addressDoc.phone}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🚚 DELIVERY DETAILS:
-Expected Delivery: 2-3 business days
-Tracking: You will receive a tracking link via SMS
-
-For any queries, contact us at support@freshnest.com
-
-Thank you for your order! 🌱
-The FreshNest Team`;
-
-    // Send detailed email invoice
-    // NOTE: Email is now sent by order.controller.js using sendOrderConfirmationEmail
-    // This prevents duplicate emails
-    console.log(`[📧 Order Email]: Already sent by order controller for order ${orderIdShort}`);
+    if (userDoc && addressDoc) {
+      // Send professional HTML order confirmation email
+      await sendOrderConfirmationEmail({
+        user: userDoc,
+        order: order,
+        items: orderProducts,
+        address: addressDoc,
+        paymentType: order.paymentType,
+        subtotal: order.subtotal,
+        taxValue: order.taxValue,
+        platformFee: order.platformFee,
+        discount: order.coupon,
+        totalAmount: order.amount
+      }).catch((e) => {
+         console.error(`[📩 Email ERROR]: Failed to send invoice for order ${orderIdShort}: ${e.message}`);
+      });
+    }
 
     // Send SMS notification if phone number is available
     if (userDoc.phone) {

@@ -22,6 +22,7 @@ const Auth = () => {
         if (data.success) {
           toast.success(data.message);
           setResetUserId(data.userId);
+          setOtp(""); // Clear any previous OTP
           setState("reset");
         } else {
           toast.error(data.message);
@@ -29,12 +30,14 @@ const Auth = () => {
       } else if (state === "reset") {
         const { data } = await axios.post("/api/user/reset-password", {
           userId: resetUserId,
+          code: otp, // Reuse the otp state for the reset code
           newPassword: password
         });
         if (data.success) {
           toast.success(data.message);
           setState("login");
           setPassword("");
+          setOtp("");
         } else {
           toast.error(data.message);
         }
@@ -135,9 +138,11 @@ const Auth = () => {
           </div>
         )}
 
-        {state === "otp-verify" && (
+        {(state === "otp-verify" || state === "reset") && (
           <div className="w-full">
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1">6-Digit OTP</label>
+            <label className="text-xs font-bold text-slate-500 uppercase ml-1">
+              {state === "reset" ? "Verification Code" : "6-Digit OTP"}
+            </label>
             <input
               onChange={(e) => setOtp(e.target.value.slice(0, 6))}
               value={otp}
@@ -147,7 +152,11 @@ const Auth = () => {
               type="text"
               required
             />
-            <p className="text-[10px] text-slate-400 mt-2">Check your email for the OTP (valid for 10 minutes)</p>
+            <p className="text-[10px] text-slate-400 mt-2">
+              {state === "reset" 
+                ? "Enter the 6-digit code sent to your email" 
+                : "Check your email for the OTP (valid for 10 minutes)"}
+            </p>
           </div>
         )}
 
@@ -199,10 +208,23 @@ const Auth = () => {
             <p className="text-slate-500">
               Didn't receive OTP?{" "}
               <span
-                onClick={() => setState("otp-send")}
+                onClick={async () => {
+                  try {
+                    setIsLoading(true);
+                    const { data } = await axios.post("/api/user/send-otp", { email });
+                    if (data.success) {
+                      toast.success("✨ New OTP sent!");
+                      setOtpUserId(data.userId);
+                    }
+                  } catch (error) {
+                    toast.error("Failed to resend OTP");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
                 className="text-emerald-600 font-bold cursor-pointer hover:underline underline-offset-4"
               >
-                Resend
+                Resend Now
               </span>
             </p>
           ) : state === "login" ? (

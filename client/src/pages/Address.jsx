@@ -8,6 +8,8 @@ const Address = () => {
     firstName: "",
     lastName: "",
     email: "",
+    houseNo: "",
+    area: "",
     street: "",
     city: "",
     state: "",
@@ -16,9 +18,9 @@ const Address = () => {
     phone: "",
     addressType: "Home"
   });
-  
+
   const { axios, user, navigate } = useContext(AppContext);
-  
+
   const handleChange = (e) => {
     setAddress({ ...address, [e.target.name]: e.target.value });
   };
@@ -45,7 +47,7 @@ const Address = () => {
   }, [user]);
 
   return (
-    <div className="mt-8 sm:mt-10 md:mt-12 min-h-[80vh] flex items-center justify-center py-6 sm:py-8 md:py-10 px-3 sm:px-4 md:px-6">
+    <div className="mt-8 sm:mt-10 md:mt-12 min-h-[80vh] flex items-center justify-center py-6 sm:py-8 md:py-10 px-3 sm:px-4 md:px-6 page-bottom-padding">
       <div className="w-full max-w-6xl bg-white rounded-2xl sm:rounded-3xl md:rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden flex flex-col md:flex-row">
         
         {/* Left Side: Illustration & Info */}
@@ -116,15 +118,43 @@ const Address = () => {
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">House / Flat No.</label>
+                <input
+                  type="text"
+                  name="houseNo"
+                  value={address.houseNo}
+                  onChange={handleChange}
+                  className="input-field"
+                  placeholder="Flat 4B"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Area / Locality</label>
+                <input
+                  type="text"
+                  name="area"
+                  value={address.area}
+                  onChange={handleChange}
+                  className="input-field"
+                  placeholder="Green Park"
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Street / House No.</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Street Name</label>
               <input
                 type="text"
                 name="street"
                 value={address.street}
                 onChange={handleChange}
                 className="input-field"
-                placeholder="123 Green Street, Apt 4B"
+                placeholder="123 Green Street"
                 required
               />
             </div>

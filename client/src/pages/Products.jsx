@@ -30,7 +30,7 @@ const Products = () => {
   }, [products, searchQuery, activeCategory]);
 
   return (
-    <div className="mt-6 sm:mt-8 md:mt-10 min-h-screen px-3 sm:px-4 md:px-0">
+    <div className="mt-6 sm:mt-8 md:mt-10 min-h-screen px-2 sm:px-4 md:px-0 page-bottom-padding">
        {/* Breadcrumbs / Title */}
        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 md:gap-0 mb-8 sm:mb-10 md:px-0">
           <div className="flex-1">

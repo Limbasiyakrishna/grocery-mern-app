@@ -25,9 +25,47 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--bg-page);
   color: #1f2937;
+  overflow-x: hidden;
+  /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE SAFE AREA & BOTTOM NAV CLEARANCE
+═══════════════════════════════════════════ */
+
+/* Push page content above mobile BottomNav (60px + safe area) */
+.page-bottom-padding {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .page-bottom-padding {
+    padding-bottom: 0;
+  }
+}
+
+/* Safe area for BottomNav itself */
+.safe-area-inset-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Prevent images from causing horizontal overflow */
+img {
+  max-width: 100%;
+}
+
+/* Fix for mobile tap highlight */
+button, a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ═══════════════════════════════════════════

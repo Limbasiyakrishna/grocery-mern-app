@@ -52,7 +52,7 @@ const App = () => {
       <Toaster />
 
       {/* Main content container with responsive padding */}
-      <div className={`${isSellerPath ? "" : "px-6 md:px-16 lg:px-24 xl:px-32"}`}>
+      <div className={`${isSellerPath ? "" : "px-3 sm:px-6 md:px-10 lg:px-16 xl:px-24"}`}>
         <Routes>
           {/* Public customer routes */}
           <Route path="/" element={<Home />} />

@@ -50,7 +50,7 @@ const SingleProduct = () => {
 
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 md:px-8 mt-6 sm:mt-8 md:mt-12 mb-16 sm:mb-20 md:mb-24 animate-fade-in">
+    <div className="container mx-auto px-3 sm:px-4 md:px-8 mt-6 sm:mt-8 md:mt-12 mb-16 sm:mb-20 md:mb-24 animate-fade-in page-bottom-padding">
       {/* Breadcrumbs */}
       <nav className="flex text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium mb-6 sm:mb-8 md:mb-10 overflow-x-auto whitespace-nowrap pb-2">
         <Link to="/" className="hover:text-emerald-600 transition">Home</Link>

@@ -29,7 +29,7 @@ const MyOrders = () => {
   }, [user]);
 
   return (
-    <div className="mt-8 sm:mt-12 md:mt-16 pb-16 sm:pb-20 max-w-6xl mx-auto px-3 sm:px-4 md:px-0">
+    <div className="mt-8 sm:mt-12 md:mt-16 pb-16 sm:pb-20 max-w-6xl mx-auto px-3 sm:px-4 md:px-0 page-bottom-padding">
       <div className="flex flex-col mb-8 sm:mb-12">
         <span className="text-emerald-600 font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] mb-1.5 sm:mb-3">Order History</span>
         <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 tracking-tighter">

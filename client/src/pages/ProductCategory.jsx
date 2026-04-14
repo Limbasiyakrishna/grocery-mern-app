@@ -30,7 +30,7 @@ const ProductCategory = () => {
   }
 
   return (
-    <div className="mt-8 sm:mt-10 md:mt-12 lg:mt-16 pb-16 sm:pb-20 md:pb-24 px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="mt-8 sm:mt-10 md:mt-12 lg:mt-16 pb-16 sm:pb-20 md:pb-24 px-2 sm:px-4 md:px-6 lg:px-8 page-bottom-padding">
       {/* Category Hero Section */}
       {searchCategory && (
         <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] lg:rounded-[3rem] bg-slate-900 mb-12 sm:mb-16 md:mb-20 lg:mb-24 p-6 sm:p-10 md:p-14 lg:p-16 text-white border border-white/10 shadow-2xl group">

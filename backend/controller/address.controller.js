@@ -10,8 +10,18 @@ export const addAddress = async (req, res) => {
     }
 
     // Ensure required fields are present
-    if (!address.firstName || !address.lastName || !address.email || !address.street || 
-        !address.city || !address.state || !address.zipCode || !address.phone) {
+    if (
+      !address.firstName ||
+      !address.lastName ||
+      !address.email ||
+      !address.houseNo ||
+      !address.area ||
+      !address.street ||
+      !address.city ||
+      !address.state ||
+      !address.zipCode ||
+      !address.phone
+    ) {
       return res.status(400).json({ success: false, message: "Please fill all required fields" });
     }
 
@@ -20,6 +30,8 @@ export const addAddress = async (req, res) => {
       firstName: address.firstName,
       lastName: address.lastName,
       email: address.email,
+      houseNo: address.houseNo,
+      area: address.area,
       street: address.street,
       city: address.city,
       state: address.state,

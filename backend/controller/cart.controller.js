@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import SharedCart from "../models/sharedCart.model.js";
+import mongoose from "mongoose";
 
 // Helper to generate a unique room ID
 const generateRoomId = () => Math.random().toString(36).substring(2, 9).toUpperCase();
@@ -88,8 +89,13 @@ export const joinCollaboration = async (req, res) => {
       cartItems: sharedCart.items 
     });
 
-    if (!sharedCart.participants.includes(userId)) {
-      sharedCart.participants.push(userId);
+    // Cast userId string to ObjectId for proper comparison with participants array
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const alreadyJoined = sharedCart.participants.some(
+      (p) => p.toString() === userId
+    );
+    if (!alreadyJoined) {
+      sharedCart.participants.push(userObjectId);
       await sharedCart.save();
     }
 
@@ -114,9 +120,11 @@ export const leaveCollaboration = async (req, res) => {
     const user = await User.findById(userId);
     
     if (user.collaborativeCartId) {
+      // Cast to ObjectId so $pull matches correctly against ObjectId array
+      const userObjectId = new mongoose.Types.ObjectId(userId);
       await SharedCart.findOneAndUpdate(
         { roomId: user.collaborativeCartId },
-        { $pull: { participants: userId } }
+        { $pull: { participants: userObjectId } }
       );
       user.collaborativeCartId = null;
       await user.save();

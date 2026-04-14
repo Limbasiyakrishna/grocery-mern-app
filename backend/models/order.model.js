@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 const orderSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true, ref: "User" },
+    userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
     items: [
       {
-        product: { type: String, required: true, ref: "Product" },
+        product: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Product" },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true }, // Price at time of order
       },
@@ -19,7 +19,7 @@ const orderSchema = new mongoose.Schema(
       discountAmount: { type: Number, default: 0 },
     },
     amount: { type: Number, required: true }, // Final amount after all calculations
-    address: { type: String, required: true, ref: "Address" },
+    address: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Address" },
     status: { type: String, default: "Order Placed" },
     paymentType: { type: String, required: true },
     isPaid: { type: Boolean, required: true, default: false },

@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, sendOTPEmail } from "../utils/messageService.js";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendOTPEmail } from "../utils/messageService.js";
 
 /**
  * Registers a new user with email, name, and password
@@ -62,8 +62,12 @@ export const registerUser = async (req, res) => {
       message: "User registered successfully",
       success: true,
       user: {
+        _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        cartItems: user.cartItems,
+        collaborativeCartId: user.collaborativeCartId,
       },
       token,
     });
@@ -123,9 +127,14 @@ export const loginUser = async (req, res) => {
       message: "Successfully logged in",
       success: true,
       user: {
+        _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        cartItems: user.cartItems,
+        collaborativeCartId: user.collaborativeCartId,
       },
+      token,
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -206,24 +215,23 @@ export const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found", success: false });
     }
 
-    // Generate secure reset token
-    const resetToken = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" } // Token expires in 15 minutes
-    );
+    // Generate 6-digit reset code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store reset token in user document (in production, use Redis or separate collection)
-    user.resetToken = resetToken;
+    // Store reset code in user document
+    user.resetToken = resetCode; // Reusing resetToken field for simplicity in migration
     user.resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
 
-    // Send professional password reset email
+    // Send password reset email with code
     await sendPasswordResetEmail({
       email,
-      resetToken,
+      resetCode,
       userName: user.name
     });
+
+    // Log code to console for development
+    console.log(`[🔑 Reset Service]: Reset code for ${email} is ${resetCode}`);
 
     // Return success with user ID for frontend
     res.status(200).json({
@@ -244,30 +252,25 @@ export const forgotPassword = async (req, res) => {
  */
 export const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { userId, code, newPassword } = req.body;
 
     // Validate required fields
-    if (!token || !newPassword) {
+    if (!userId || !code || !newPassword) {
       return res.status(400).json({ message: "Missing required fields", success: false });
     }
 
-    // Verify reset token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (error) {
-      return res.status(400).json({ message: "Invalid or expired reset token", success: false });
-    }
-
-    // Find user by decoded ID
-    const user = await User.findById(decoded.id);
+    // Find user by ID
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found", success: false });
     }
 
+    // Master Reset Code for development
+    const isMasterCode = process.env.NODE_ENV !== "production" && code === "123456";
+
     // Check if token matches and hasn't expired
-    if (user.resetToken !== token || user.resetTokenExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired reset token", success: false });
+    if (!isMasterCode && (user.resetToken !== code || user.resetTokenExpiry < Date.now())) {
+      return res.status(400).json({ message: "Invalid or expired verification code", success: false });
     }
 
     // Hash new password
@@ -334,6 +337,9 @@ export const sendOTP = async (req, res) => {
       userName: user.name
     });
 
+    // Log OTP to console for development convenience
+    console.log(`[🔑 OTP Service]: Code for ${email} is ${otp}`);
+
     // Return success with user ID
     res.status(200).json({
       message: "OTP sent to your email",
@@ -366,13 +372,16 @@ export const verifyOTP = async (req, res) => {
       return res.status(404).json({ message: "User not found", success: false });
     }
 
+    // Master OTP for development
+    const isMasterOtp = process.env.NODE_ENV !== "production" && otp === "123456";
+
     // Verify OTP code
-    if (user.otpCode !== otp) {
+    if (!isMasterOtp && user.otpCode !== otp) {
       return res.status(400).json({ message: "Invalid OTP", success: false });
     }
 
     // Check OTP expiry
-    if (new Date() > user.otpExpiry) {
+    if (!isMasterOtp && new Date() > user.otpExpiry) {
       return res.status(400).json({ message: "OTP has expired", success: false });
     }
 
@@ -398,8 +407,12 @@ export const verifyOTP = async (req, res) => {
       message: "Login successful",
       success: true,
       user: {
+        _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        cartItems: user.cartItems,
+        collaborativeCartId: user.collaborativeCartId,
       },
       token,
     });
