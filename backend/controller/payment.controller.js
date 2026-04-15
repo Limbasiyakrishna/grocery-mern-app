@@ -3,8 +3,17 @@ import Product from "../models/product.model.js";
 import Address from "../models/address.model.js";
 import User from "../models/user.model.js";
 import { sendEmail, sendSMS, sendOrderConfirmationEmail } from "../utils/messageService.js";
+import Razorpay from "razorpay";
+import crypto from "crypto";
+import dotenv from "dotenv";
 
-// Dummy payment module: accepts all payment methods, no external gateway
+dotenv.config();
+
+// Razorpay Instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 /**
  * Sends order confirmation notifications via email and SMS
@@ -12,16 +21,13 @@ import { sendEmail, sendSMS, sendOrderConfirmationEmail } from "../utils/message
  */
 const sendOrderNotifications = async (orderId) => {
   try {
-    // Fetch order details
     const order = await Order.findById(orderId);
     if (!order) return;
 
-    // Fetch user and address details
     const userDoc = await User.findById(order.userId);
     const addressDoc = await Address.findById(order.address);
     if (!userDoc || !addressDoc) return;
 
-    // Prepare product details for the email
     const orderProducts = await Promise.all(
       order.items.map(async (item) => {
         const product = await Product.findById(item.product);
@@ -37,7 +43,6 @@ const sendOrderNotifications = async (orderId) => {
     const orderIdShort = order._id.toString().slice(-6).toUpperCase();
 
     if (userDoc && addressDoc) {
-      // Send professional HTML order confirmation email
       await sendOrderConfirmationEmail({
         user: userDoc,
         order: order,
@@ -54,33 +59,27 @@ const sendOrderNotifications = async (orderId) => {
       });
     }
 
-    // Send SMS notification if phone number is available
     if (userDoc.phone) {
       const smsBody = `🎉 FreshNest Order Confirmed! Order #${orderIdShort} for ₹${order.amount} will be delivered to ${addressDoc.city} in 2-3 days. Invoice sent to email.`;
-      sendSMS(userDoc.phone, smsBody).catch((e) => {}); // Silent fail on SMS error
+      sendSMS(userDoc.phone, smsBody).catch((e) => {});
     }
   } catch (err) {
-    // Silent error handling to avoid disrupting payment flow
+    console.error("Notification error:", err);
   }
 };
 
 /**
  * Retrieves the payment status of an order
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
  */
 export const getPaymentStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
-
-    // Find the order by ID
     const order = await Order.findById(orderId);
 
     if (!order) {
       return res.json({ success: false, message: "Order not found" });
     }
 
-    // Return order payment details
     res.json({
       success: true,
       orderId: order._id,
@@ -96,11 +95,9 @@ export const getPaymentStatus = async (req, res) => {
 };
 
 /**
- * Creates a dummy payment order that accepts any payment type
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * Creates a Razorpay order
  */
-export const createDummyOrder = async (req, res) => {
+export const createRazorpayOrder = async (req, res) => {
   try {
     const {
       userId,
@@ -114,19 +111,24 @@ export const createDummyOrder = async (req, res) => {
       paymentType,
     } = req.body;
 
-    // Validate required fields
     if (!userId || !items || !addressId || !amount) {
       return res.json({ success: false, message: "Missing required fields" });
     }
 
-    // Normalize and validate payment type
-    const normalizedPaymentType = (paymentType || "DUMMY").toString().trim().toUpperCase();
-    const acceptedMethods = ["DUMMY", "COD", "CARD", "UPI", "NETBANKING", "WALLET", "BANKTRANSFER", "BHIM", "PAYTM"];
-    const finalPaymentType = acceptedMethods.includes(normalizedPaymentType)
-      ? normalizedPaymentType
-      : "DUMMY";
+    // Razorpay amount is in paise (₹1 = 100 paise)
+    const options = {
+      amount: Math.round(amount * 100),
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    };
 
-    // Create order in database with pending payment status
+    const razorpayOrder = await razorpay.orders.create(options);
+
+    if (!razorpayOrder) {
+      return res.json({ success: false, message: "Failed to create Razorpay order" });
+    }
+
+    // Create record in our database
     const order = new Order({
       userId,
       items,
@@ -136,63 +138,120 @@ export const createDummyOrder = async (req, res) => {
       subtotal,
       taxValue,
       platformFee,
-      paymentType: finalPaymentType,
+      paymentType: paymentType || "RAZORPAY",
+      razorpayOrderId: razorpayOrder.id,
       isPaid: false,
       status: "Awaiting Payment",
     });
 
     await order.save();
 
-    // Return success response with order details
     res.json({
       success: true,
-      message: `Dummy order created with paymentType ${finalPaymentType}`,
       orderId: order._id,
-      amount: order.amount,
-      paymentType: finalPaymentType,
+      razorpayOrderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID
     });
   } catch (error) {
-    console.error("Dummy order creation error:", error);
+    console.error("Razorpay order creation error:", error);
     res.json({ success: false, message: error.message });
   }
 };
 
 /**
- * Verifies and completes a dummy payment by updating order status
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * Verifies Razorpay payment signature
  */
-export const verifyDummyPayment = async (req, res) => {
+export const verifyRazorpayPayment = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
 
-    // Validate order ID
-    if (!orderId) {
-      return res.json({ success: false, message: "Order ID is required" });
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature === razorpay_signature) {
+      // Payment is verified
+      const order = await Order.findByIdAndUpdate(
+        orderId,
+        { 
+          isPaid: true, 
+          status: "Order Placed",
+          razorpayPaymentId: razorpay_payment_id
+        },
+        { new: true }
+      );
+
+      if (!order) {
+        return res.json({ success: false, message: "Order not found" });
+      }
+
+      sendOrderNotifications(order._id);
+
+      res.json({
+        success: true,
+        message: "Payment verified successfully",
+        orderId: order._id,
+      });
+    } else {
+      res.json({ success: false, message: "Invalid signature, payment verification failed" });
     }
-
-    // Update order to paid and placed status
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      { isPaid: true, status: "Order Placed" },
-      { new: true }
-    );
-
-    if (!order) {
-      return res.json({ success: false, message: "Order not found" });
-    }
-
-    // Send order notifications asynchronously
-    sendOrderNotifications(order._id);
-
-    // Return success response
-    res.json({
-      success: true,
-      message: "Payment verified successfully (Dummy)",
-      orderId: order._id,
-    });
   } catch (error) {
-    console.error("Dummy payment verification error:", error);
+    console.error("Razorpay verification error:", error);
     res.json({ success: false, message: error.message });
   }
 };
+
+/**
+ * Handles Cash on Delivery order creation
+ */
+export const createCodOrder = async (req, res) => {
+  try {
+    const {
+      userId,
+      items,
+      addressId,
+      coupon,
+      amount,
+      subtotal,
+      taxValue,
+      platformFee,
+    } = req.body;
+
+    if (!userId || !items || !addressId || !amount) {
+      return res.json({ success: false, message: "Missing required fields" });
+    }
+
+    const order = new Order({
+      userId,
+      items,
+      address: addressId,
+      coupon: coupon || {},
+      amount,
+      subtotal,
+      taxValue,
+      platformFee,
+      paymentType: "COD",
+      isPaid: false,
+      status: "Order Placed",
+    });
+
+    await order.save();
+    
+    sendOrderNotifications(order._id);
+
+    res.json({
+      success: true,
+      message: "COD order placed successfully",
+      orderId: order._id,
+    });
+  } catch (error) {
+    console.error("COD order creation error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
