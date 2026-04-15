@@ -1,138 +1,973 @@
 {
   "info": {
-    "name": "Grocery MERN App API",
+    "name": "FreshNest Grocery MERN App – Full API Collection",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Dummy payment endpoints + user auth for grocery-mern-app"
+    "description": "Complete API collection for the FreshNest Grocery MERN App. Base URL: http://127.0.0.1:5000. Use the 'FreshNest Dev' environment with variables: authToken, sellerToken, userId, orderId, productId, addressId, messageId."
   },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:5000", "type": "string" },
+    { "key": "authToken",   "value": "", "type": "string" },
+    { "key": "sellerToken", "value": "", "type": "string" },
+    { "key": "userId",      "value": "", "type": "string" },
+    { "key": "orderId",     "value": "", "type": "string" },
+    { "key": "productId",   "value": "", "type": "string" },
+    { "key": "addressId",   "value": "", "type": "string" },
+    { "key": "messageId",   "value": "", "type": "string" },
+    { "key": "couponCode",  "value": "SAVE10", "type": "string" }
+  ],
   "item": [
+
     {
-      "name": "1. Register User",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": { "raw": "http://127.0.0.1:5000/api/user/register", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "user", "register"] },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
-        }
-      },
-      "event": [
+      "name": "🔐 Auth – User",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Register status 201 or 400', function () {",
-              "  pm.expect(pm.response.code).to.be.oneOf([201,400]);",
-              "});",
-              "const data = pm.response.json();",
-              "if (data.success) {",
-              "  pm.environment.set('authToken', data.token);",
-              "  pm.environment.set('userId', data.user && (data.user._id || ''));",
-              "}" 
-            ]
-          }
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const d = pm.response.json();",
+                  "if (d.success && d.token) {",
+                  "  pm.collectionVariables.set('authToken', d.token);",
+                  "  pm.collectionVariables.set('userId', d.user?._id || '');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.success && d.token) {",
+                  "  pm.collectionVariables.set('authToken', d.token);",
+                  "  pm.collectionVariables.set('userId', d.user?._id || '');",
+                  "}",
+                  "// Also grab from cookie if token is cookie-based",
+                  "const cookie = pm.response.headers.get('set-cookie');",
+                  "if (cookie) {",
+                  "  const m = /token=([^;]+)/.exec(cookie);",
+                  "  if (m) pm.collectionVariables.set('authToken', m[1]);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check Auth (Is Authenticated?)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/is-auth",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "is-auth"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Authenticated', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "logout"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Logout success', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "forgot-password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response received', () => pm.expect(pm.response.code).to.be.oneOf([200, 400, 404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "reset-password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"RESET_TOKEN_HERE\",\n  \"password\": \"NewPassword123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response received', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/send-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "send-otp"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('OTP sent', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/user/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "verify-otp"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"otp\": \"123456\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response received', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "const d = pm.response.json();",
+                  "if (d.success && d.token) pm.collectionVariables.set('authToken', d.token);"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
+
     {
-      "name": "2. Login User",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": { "raw": "http://127.0.0.1:5000/api/user/login", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "user", "login"] },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
-        }
-      },
-      "event": [
+      "name": "🏪 Auth – Seller",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Login status 200', function () { pm.response.to.have.property('code', 200); });",
-              "const cookieHeader = pm.response.headers.get('set-cookie');",
-              "if (cookieHeader) {",
-              "  const match = /token=([^;]+);/.exec(cookieHeader);",
-              "  if (match) pm.environment.set('authToken', match[1]);",
-              "}"
-            ]
-          }
+          "name": "Seller Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/seller/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "seller", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller@example.com\",\n  \"password\": \"SellerPass123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Seller login success', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.success && d.token) pm.collectionVariables.set('sellerToken', d.token);",
+                  "const cookie = pm.response.headers.get('set-cookie');",
+                  "if (cookie) {",
+                  "  const m = /sellerToken=([^;]+)/.exec(cookie);",
+                  "  if (m) pm.collectionVariables.set('sellerToken', m[1]);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Is Auth",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "sellerToken={{sellerToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/seller/is-auth",
+              "host": ["{{base_url}}"],
+              "path": ["api", "seller", "is-auth"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Seller authenticated', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Logout",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "sellerToken={{sellerToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/seller/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "seller", "logout"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Seller logout success', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
+
     {
-      "name": "3. Create Dummy Payment Order",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Cookie", "value": "token={{authToken}}" }
-        ],
-        "url": { "raw": "http://127.0.0.1:5000/api/payment/dummy/create-order", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "payment", "dummy", "create-order"] },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"items\": [{\n    \"product\": \"000000000000000000000000\",\n    \"quantity\": 1,\n    \"price\": 100\n  }],\n  \"addressId\": \"000000000000000000000000\",\n  \"coupon\": null,\n  \"amount\": 100,\n  \"subtotal\": 100,\n  \"taxValue\": 0,\n  \"platformFee\": 0,\n  \"paymentType\": \"CARD\"\n}"
-        }
-      },
-      "event": [
+      "name": "📦 Products",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Create order success', function () { pm.expect(pm.response.json().success).to.be.true; });",
-              "pm.environment.set('orderId', pm.response.json().orderId);"
-            ]
-          }
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/product/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "product", "list"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Products loaded', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.products && d.products.length > 0) pm.collectionVariables.set('productId', d.products[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Product By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/product/id/{{productId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "product", "id", "{{productId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Product found', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Product (Seller)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Cookie", "value": "sellerToken={{sellerToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/product/add-product",
+              "host": ["{{base_url}}"],
+              "path": ["api", "product", "add-product"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name",        "value": "Fresh Apples",  "type": "text" },
+                { "key": "description", "value": "Crispy red apples straight from the farm.", "type": "text" },
+                { "key": "price",       "value": "120",            "type": "text" },
+                { "key": "offerPrice",  "value": "99",             "type": "text" },
+                { "key": "category",    "value": "Fruits",         "type": "text" },
+                { "key": "inStock",     "value": "true",           "type": "text" },
+                { "key": "image",       "src": [],                 "type": "file", "description": "Upload up to 4 product images" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Product added', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "const d = pm.response.json();",
+                  "if (d.product) pm.collectionVariables.set('productId', d.product._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Product Stock (Seller)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "sellerToken={{sellerToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/product/stock",
+              "host": ["{{base_url}}"],
+              "path": ["api", "product", "stock"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{productId}}\",\n  \"inStock\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Stock updated', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
+
     {
-      "name": "4. Verify Dummy Payment",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Cookie", "value": "token={{authToken}}" }
-        ],
-        "url": { "raw": "http://127.0.0.1:5000/api/payment/dummy/verify", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "payment", "dummy", "verify"] },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"orderId\": \"{{orderId}}\"\n}"
-        }
-      },
-      "event": [
+      "name": "🛒 Cart",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Verify successful', function () { pm.expect(pm.response.json().success).to.be.true; });"
-            ]
-          }
+          "name": "Update Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cart/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cart", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cartData\": {\n    \"{{productId}}\": 2\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Cart updated', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Collaboration Session",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/cart/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cart", "start"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Collab started', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Join Collaboration Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cart/join",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cart", "join"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionCode\": \"SESSION_CODE_HERE\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Joined session', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leave Collaboration Session",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/cart/leave",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cart", "leave"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Left session', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync Cart",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/cart/sync",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cart", "sync"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Cart synced', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
+
     {
-      "name": "5. Get Payment Status",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Cookie", "value": "token={{authToken}}" }
-        ],
-        "url": { "raw": "http://127.0.0.1:5000/api/payment/status/{{orderId}}", "protocol": "http", "host": ["127", "0", "0", "1"], "port": "5000", "path": ["api", "payment", "status", "{{orderId}}"] }
-      },
-      "event": [
+      "name": "📍 Address",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Status loaded', function() { pm.expect(pm.response.json().success).to.be.true; });",
-              "pm.test('Payment is paid', function() { pm.expect(pm.response.json().isPaid).to.be.true; });"
-            ]
-          }
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/address/add",
+              "host": ["{{base_url}}"],
+              "path": ["api", "address", "add"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"testuser@example.com\",\n  \"street\": \"123 Main Street\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"zipcode\": \"400001\",\n  \"country\": \"India\",\n  \"phone\": \"9876543210\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Address added', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "const d = pm.response.json();",
+                  "if (d.address) pm.collectionVariables.set('addressId', d.address._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Addresses",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/address/get",
+              "host": ["{{base_url}}"],
+              "path": ["api", "address", "get"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Addresses fetched', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.addresses && d.addresses.length > 0) pm.collectionVariables.set('addressId', d.addresses[0]._id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "🧾 Orders",
+      "item": [
+        {
+          "name": "Place COD Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/order/cod",
+              "host": ["{{base_url}}"],
+              "path": ["api", "order", "cod"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"product\": \"{{productId}}\", \"quantity\": 2, \"price\": 99 }\n  ],\n  \"addressId\": \"{{addressId}}\",\n  \"amount\": 198,\n  \"subtotal\": 198,\n  \"taxValue\": 0,\n  \"platformFee\": 0,\n  \"paymentType\": \"COD\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('COD order placed', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "const d = pm.response.json();",
+                  "if (d.orderId) pm.collectionVariables.set('orderId', d.orderId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/order/user",
+              "host": ["{{base_url}}"],
+              "path": ["api", "order", "user"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User orders fetched', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.orders && d.orders.length > 0) pm.collectionVariables.set('orderId', d.orders[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Orders (Seller)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "sellerToken={{sellerToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/order/seller",
+              "host": ["{{base_url}}"],
+              "path": ["api", "order", "seller"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All orders fetched', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "💳 Payment",
+      "item": [
+        {
+          "name": "Create Dummy Payment Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/payment/dummy/create-order",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payment", "dummy", "create-order"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"product\": \"{{productId}}\", \"quantity\": 1, \"price\": 99 }\n  ],\n  \"addressId\": \"{{addressId}}\",\n  \"amount\": 99,\n  \"subtotal\": 99,\n  \"taxValue\": 0,\n  \"platformFee\": 0,\n  \"paymentType\": \"CARD\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Dummy order created', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "const d = pm.response.json();",
+                  "if (d.orderId) pm.collectionVariables.set('orderId', d.orderId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Dummy Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/payment/dummy/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payment", "dummy", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment verified', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "token={{authToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/payment/status/{{orderId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payment", "status", "{{orderId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status fetched', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Payment is paid', () => pm.expect(pm.response.json().isPaid).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "🎟️ Coupons",
+      "item": [
+        {
+          "name": "Get Active Coupons",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/coupon/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "coupon", "list"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Coupons fetched', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.coupons && d.coupons.length > 0) pm.collectionVariables.set('couponCode', d.coupons[0].code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validate Coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "token={{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/coupon/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "coupon", "validate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"orderAmount\": 500\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Coupon response received', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "✉️ Messages (Contact)",
+      "item": [
+        {
+          "name": "Send Contact Message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/message/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "message", "send"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"subject\": \"Test Inquiry\",\n  \"message\": \"Hello, I'd like to know more about your products.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Message sent', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "const d = pm.response.json();",
+                  "if (d.message) pm.collectionVariables.set('messageId', d.message._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Messages (Seller)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "sellerToken={{sellerToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/message/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "message", "all"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Messages fetched', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (d.messages && d.messages.length > 0) pm.collectionVariables.set('messageId', d.messages[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Message Status (Seller)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie",       "value": "sellerToken={{sellerToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/message/{{messageId}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "message", "{{messageId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"read\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Message status updated', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Message (Seller)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Cookie", "value": "sellerToken={{sellerToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/message/{{messageId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "message", "{{messageId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Message deleted', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
+
   ]
 }
-
