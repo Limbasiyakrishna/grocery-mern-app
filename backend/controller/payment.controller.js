@@ -109,6 +109,8 @@ export const createRazorpayOrder = async (req, res) => {
       taxValue,
       platformFee,
       paymentType,
+      pointsUsed,
+      walletUsed,
     } = req.body;
 
     if (!userId || !items || !addressId || !amount) {
@@ -142,6 +144,8 @@ export const createRazorpayOrder = async (req, res) => {
       razorpayOrderId: razorpayOrder.id,
       isPaid: false,
       status: "Awaiting Payment",
+      pointsUsed: pointsUsed || 0,
+      walletUsed: walletUsed || 0,
     });
 
     await order.save();
@@ -191,6 +195,22 @@ export const verifyRazorpayPayment = async (req, res) => {
       }
 
       sendOrderNotifications(order._id);
+      
+      // Deduct points and wallet balance if used
+      if (order.pointsUsed > 0 || order.walletUsed > 0) {
+        await User.findByIdAndUpdate(order.userId, { 
+          $inc: { 
+            rewardPoints: -(order.pointsUsed || 0),
+            walletBalance: -(order.walletUsed || 0)
+          } 
+        });
+      }
+
+      // Award reward points (1 point for every ₹100 spent)
+      const pointsAwarded = Math.floor(order.amount / 100);
+      if (pointsAwarded > 0) {
+        await User.findByIdAndUpdate(order.userId, { $inc: { rewardPoints: pointsAwarded } });
+      }
 
       res.json({
         success: true,
@@ -202,7 +222,7 @@ export const verifyRazorpayPayment = async (req, res) => {
     }
   } catch (error) {
     console.error("Razorpay verification error:", error);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -220,6 +240,8 @@ export const createCodOrder = async (req, res) => {
       subtotal,
       taxValue,
       platformFee,
+      pointsUsed,
+      walletUsed,
     } = req.body;
 
     if (!userId || !items || !addressId || !amount) {
@@ -238,11 +260,29 @@ export const createCodOrder = async (req, res) => {
       paymentType: "COD",
       isPaid: false,
       status: "Order Placed",
+      pointsUsed: pointsUsed || 0,
+      walletUsed: walletUsed || 0,
     });
 
     await order.save();
     
     sendOrderNotifications(order._id);
+
+    // Deduct points if used
+    if (pointsUsed && pointsUsed > 0) {
+      await User.findByIdAndUpdate(userId, { $inc: { rewardPoints: -pointsUsed } });
+    }
+
+    // Deduct wallet balance if used
+    if (walletUsed && walletUsed > 0) {
+      await User.findByIdAndUpdate(userId, { $inc: { walletBalance: -walletUsed } });
+    }
+
+    // Award reward points (1 point for every ₹100 spent)
+    const pointsAwarded = Math.floor(amount / 100);
+    if (pointsAwarded > 0) {
+      await User.findByIdAndUpdate(userId, { $inc: { rewardPoints: pointsAwarded } });
+    }
 
     res.json({
       success: true,

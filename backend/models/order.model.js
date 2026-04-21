@@ -25,6 +25,8 @@ const orderSchema = new mongoose.Schema(
     isPaid: { type: Boolean, required: true, default: false },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },
+    pointsUsed: { type: Number, default: 0 },
+    walletUsed: { type: Number, default: 0 },
   },
 
   { timestamps: true }

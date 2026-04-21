@@ -1,30 +1,30 @@
+import { useEffect, useState } from "react";
+import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+
 const Health = () => {
-    const blogs = [
-        {
-            id: 3,
-            title: "Benefits of Leafy Greens",
-            category: "Health & Wellness",
-            date: "Jan 12th, 2026",
-            image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=800",
-            excerpt: "Spinach, Kale and Chard. The powerhouses of nutrition that you MUST add to your diet."
-        },
-        {
-            id: 6,
-            title: "How Water Impacts Your Metabolism",
-            category: "Health & Wellness",
-            date: "Dec 30th, 2025",
-            image: "https://images.unsplash.com/photo-1548919973-5cfe5d4fc99a?auto=format&fit=crop&q=80&w=800",
-            excerpt: "Staying hydrated is more than just quenching thirst. It's the engine for your body's energy."
-        },
-        {
-            id: 7,
-            title: "The Truth About Superfoods",
-            category: "Health & Wellness",
-            date: "Nov 5th, 2025",
-            image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800",
-            excerpt: "Are acai berries and matcha really miracle cures? Let's separate hype from science."
-        }
-    ];
+    const { axios } = useAppContext();
+    const navigate = useNavigate();
+    const [blogs, setBlogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHealthArticles = async () => {
+            try {
+                const { data } = await axios.get("/api/blog/all");
+                if (data.success) {
+                    setBlogs(data.blogs.filter(b => b.category === "Health & Wellness"));
+                }
+            } catch (error) {
+                console.error("Error fetching health articles", error);
+                toast.error("Failed to load health articles");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHealthArticles();
+    }, []);
 
     return (
         <div className="mt-12 sm:mt-16 md:mt-20 lg:mt-24 mb-20 sm:mb-24 md:mb-28 px-3 sm:px-4 md:px-6">
@@ -37,30 +37,50 @@ const Health = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12">
-                {blogs.map(blog => (
-                    <div key={blog.id} className="bg-white rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-sm hover:shadow-lg transition-all border border-gray-100 group flex flex-col h-full">
-                        <div className="relative overflow-hidden h-40 sm:h-48 md:h-56 lg:h-64">
-                            <img src={blog.image} alt={blog.title} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                        </div>
-                        <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-1">
-                            <span className="text-emerald-500 font-medium text-[8px] sm:text-xs md:text-xs uppercase tracking-wide">{blog.category}</span>
-                            <span className="text-gray-400 text-[8px] sm:text-xs md:text-xs ml-2 sm:ml-3 border-l pl-2 sm:pl-3">{blog.date}</span>
-                            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mt-2 sm:mt-2.5 md:mt-3 mb-2 sm:mb-2.5 md:mb-3 hover:text-teal-600 cursor-pointer line-clamp-2">
-                                {blog.title}
-                            </h2>
-                            <p className="text-gray-600 text-xs sm:text-sm md:text-sm leading-relaxed mb-4 sm:mb-6">
-                                {blog.excerpt}
-                            </p>
-                            <div className="mt-auto flex items-center justify-between">
-                                <span className="text-[8px] sm:text-xs md:text-xs text-gray-400">5 min read</span>
-                                <button className="text-teal-600 font-bold text-xs sm:text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                                    Detail View <span>→</span>
-                                </button>
+                {loading ? (
+                    Array(3).fill(0).map((_, i) => (
+                        <div key={i} className="bg-white rounded-[3rem] h-[25rem] animate-pulse border border-gray-100" />
+                    ))
+                ) : blogs.length > 0 ? (
+                    blogs.map(blog => (
+                        <div key={blog._id} className="bg-white rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-sm hover:shadow-lg transition-all border border-gray-100 group flex flex-col h-full">
+                            <div className="relative overflow-hidden h-40 sm:h-48 md:h-56 lg:h-64">
+                                <img src={blog.image} alt={blog.title} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                            </div>
+                            <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-1">
+                                <div className="flex items-center mb-3">
+                                    <span className="text-emerald-500 font-medium text-[8px] sm:text-xs md:text-xs uppercase tracking-wide">{blog.category}</span>
+                                    <span className="text-gray-400 text-[8px] sm:text-xs md:text-xs ml-2 sm:ml-3 border-l pl-2 sm:pl-3">
+                                        {new Date(blog.date).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                </div>
+                                <h2 
+                                    onClick={() => navigate(`/blog/${blog._id}`)}
+                                    className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2 sm:mb-2.5 md:mb-3 hover:text-teal-600 cursor-pointer line-clamp-2 transition-colors"
+                                >
+                                    {blog.title}
+                                </h2>
+                                <p className="text-gray-600 text-xs sm:text-sm md:text-sm leading-relaxed mb-4 sm:mb-6 flex-1">
+                                    {blog.excerpt}
+                                </p>
+                                <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
+                                    <span className="text-[8px] sm:text-xs md:text-xs text-gray-400">{Math.ceil(blog.content?.length / 1000) || 5} min read</span>
+                                    <button 
+                                        onClick={() => navigate(`/blog/${blog._id}`)}
+                                        className="text-teal-600 font-bold text-xs sm:text-sm flex items-center gap-1 hover:gap-2 transition-all"
+                                    >
+                                        Detail View <span>→</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                    ))
+                ) : (
+                    <div className="col-span-full py-20 text-center">
+                        <p className="text-gray-400 font-medium">No health & wellness articles available yet.</p>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );

@@ -2,15 +2,21 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { categories } from '../assets/assets';
 import { getImgSrc } from '../utils/imgResolver';
+import { useAppContext } from '../context/AppContext';
 
 const SearchSuggestions = ({ query, isVisible, onClose }) => {
     const navigate = useNavigate();
+    const { products, addToCart } = useAppContext();
 
     if (!isVisible || !query) return null;
 
     const filteredCategories = categories.filter(c => 
         c.text.toLowerCase().includes(query.toLowerCase())
     ).slice(0, 3);
+
+    const filteredProducts = products.filter(p => 
+        p.name.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 4);
 
     return (
         <div className="absolute top-full left-0 right-0 bg-white/95 backdrop-blur-xl border border-emerald-100/60 shadow-2xl rounded-xl sm:rounded-2xl mt-2 sm:mt-3 p-4 sm:p-5 md:p-6 z-[100] animate-scale-up max-h-[60vh] overflow-y-auto">
@@ -32,6 +38,36 @@ const SearchSuggestions = ({ query, isVisible, onClose }) => {
                     ))}
                     {filteredCategories.length === 0 && (
                         <p className="col-span-2 sm:col-span-3 text-[9px] sm:text-xs text-gray-400 italic px-2 text-center">No matching categories</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Matching Products Section */}
+            <div className="mb-4 sm:mb-6">
+                <h4 className="text-[8px] sm:text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 sm:mb-4 px-2">Matching Products</h4>
+                <div className="space-y-2">
+                    {filteredProducts.map((product, i) => (
+                        <div key={i} className="flex items-center gap-3 p-2 rounded-xl border border-gray-50 hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group">
+                            <div className="w-12 h-12 bg-gray-50 rounded-lg p-1 shrink-0">
+                                <img src={getImgSrc(product.image[0])} className="w-full h-full object-contain mix-blend-multiply" alt={product.name} />
+                            </div>
+                            <div className="flex-1 min-w-0" onClick={() => { navigate(`/product/${product.category}/${product._id}`); onClose(); }}>
+                                <p className="text-xs font-black text-gray-900 truncate uppercase tracking-tight">{product.name}</p>
+                                <p className="text-[10px] font-bold text-emerald-600">₹{product.offerPrice}</p>
+                            </div>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    addToCart(product._id);
+                                }}
+                                className="px-3 py-1.5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all active:scale-95 shadow-sm"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    ))}
+                    {filteredProducts.length === 0 && (
+                        <p className="text-[9px] sm:text-xs text-gray-400 italic px-2 text-center">No matching products</p>
                     )}
                 </div>
             </div>

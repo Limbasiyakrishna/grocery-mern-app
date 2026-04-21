@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { getImgSrc } from "../utils/imgResolver";
 import toast from "react-hot-toast";
+import { QRCodeSVG } from "qrcode.react";
 import PaymentGateway from "../modals/PaymentGateway";
 
 const Cart = () => {
@@ -16,6 +17,11 @@ const Cart = () => {
     axios,
     user,
     setShowUserLogin,
+    collaborationId,
+    participantCount,
+    startCollaboration,
+    leaveCollaboration,
+    joinCollaboration
   } = useAppContext();
 
   const [cartArray, setCartArray] = useState([]);
@@ -143,13 +149,27 @@ const Cart = () => {
     toast.success("Coupon removed");
   };
 
+  const [usePoints, setUsePoints] = useState(false);
+  
   // Calculate billing amounts
   const subtotal = totalCartAmount();
   const TAX_RATE = 5; // 5% tax
   const taxAmount = Math.floor((subtotal * TAX_RATE) / 100);
   const platformFee = 5;
   const discountAmount = appliedCoupon?.discountAmount || 0;
-  const finalAmount = subtotal + taxAmount + platformFee - discountAmount;
+  
+  // Wallet System
+  const walletBalance = user?.walletBalance || 0;
+  const [useWallet, setUseWallet] = useState(false);
+  
+  // Calculate potential points discount
+  const pointsAvailable = user?.rewardPoints || 0;
+  const pointsRedeemable = Math.min(pointsAvailable, (subtotal * 0.2) * 10);
+  const pointsDiscount = usePoints ? Math.floor(pointsRedeemable / 10) : 0;
+
+  const walletDiscount = useWallet ? Math.min(walletBalance, subtotal + taxAmount + platformFee - discountAmount - pointsDiscount) : 0;
+
+  const finalAmount = subtotal + taxAmount + platformFee - discountAmount - pointsDiscount - walletDiscount;
 
   if (products.length === 0) return <div className="h-screen flex items-center justify-center animate-pulse text-emerald-600 font-black text-sm sm:text-base md:text-lg">Loading Basket...</div>;
 
@@ -227,6 +247,51 @@ const Cart = () => {
             </div>
           </div>
 
+          {/* Group Shopping Section */}
+          <div className="mt-8 border-t border-gray-100 pt-8">
+            <div className={`rounded-3xl p-6 transition-all border-2 ${collaborationId ? 'bg-emerald-50 border-emerald-200 shadow-xl' : 'bg-white border-gray-100 shadow-sm'}`}>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-xl shadow-lg ring-4 ring-emerald-50">👥</div>
+                    <h3 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight uppercase">Group <span className="text-emerald-600">Shopping</span></h3>
+                  </div>
+                  <p className="text-sm font-medium text-gray-500 max-w-md">
+                    Invite friends to shop together. Everyone can add items to this cart and you get a <span className="text-emerald-600 font-black">5% Group Discount!</span>
+                  </p>
+                </div>
+                
+                {!collaborationId ? (
+                  <button 
+                    onClick={startCollaboration}
+                    className="w-full md:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-900/10 active:scale-95"
+                  >
+                    Create Group Room
+                  </button>
+                ) : (
+                  <div className="w-full md:w-auto flex flex-col sm:flex-row items-center gap-6">
+                    {/* QR Code */}
+                    <div className="bg-white p-3 rounded-2xl shadow-md border border-emerald-100">
+                      <QRCodeSVG value={collaborationId} size={80} />
+                      <p className="text-[8px] font-black uppercase text-center mt-2 text-emerald-600">Scan to join</p>
+                    </div>
+                    
+                    <div className="flex-1 text-center sm:text-left">
+                       <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Room ID: {collaborationId.slice(-6).toUpperCase()}</p>
+                       <p className="text-xl font-black text-slate-900 mb-3">{participantCount} Participants</p>
+                       <button 
+                         onClick={leaveCollaboration}
+                         className="text-[10px] font-black uppercase text-red-500 hover:underline tracking-widest"
+                       >
+                         End Group Session
+                       </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Delivery Address Section */}
           <div className="mt-6 sm:mt-8 lg:mt-10">
             {user ? (
@@ -283,6 +348,40 @@ const Cart = () => {
                     <span className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-600">₹{finalAmount}</span>
                   </div>
                 </div>
+
+                {/* Reward Points Section */}
+                {user && pointsAvailable > 50 && (
+                  <div className="mb-4 sm:mb-5 md:mb-6 p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between group cursor-pointer" onClick={() => setUsePoints(!usePoints)}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">★</div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Loyalty Points</p>
+                        <p className="text-sm font-black text-slate-800">{pointsAvailable} <span className="text-[10px] font-bold text-slate-400">Pts Available</span></p>
+                      </div>
+                    </div>
+                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${usePoints ? 'bg-blue-600 border-blue-600' : 'border-blue-200'}`}>
+                      {usePoints && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Wallet Balance Section */}
+                {user && walletBalance > 0 && (
+                  <div className={`mb-4 sm:mb-5 md:mb-6 p-4 rounded-2xl border-2 transition-all cursor-pointer group ${useWallet ? 'bg-orange-50 border-orange-200 shadow-md' : 'bg-white border-gray-100 hover:border-gray-200'}`} onClick={() => setUseWallet(!useWallet)}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center text-xl shadow-sm">👛</div>
+                         <div>
+                            <p className="text-[10px] font-black uppercase text-orange-600 tracking-widest">Freshnest Wallet</p>
+                            <p className="text-sm font-black text-slate-800">₹{walletBalance} Available</p>
+                         </div>
+                      </div>
+                      <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${useWallet ? 'bg-orange-600 border-orange-600' : 'border-gray-200'}`}>
+                        {useWallet && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <h3 className="hidden lg:block text-base sm:text-lg md:text-xl font-black text-gray-900 tracking-tight uppercase mb-4 sm:mb-6">Order Summary</h3>
                 
@@ -396,13 +495,25 @@ const Cart = () => {
                        <span>- ₹{discountAmount}</span>
                      </div>
                    )}
+                   {pointsDiscount > 0 && (
+                     <div className="flex justify-between text-[9px] sm:text-xs md:text-sm font-bold text-blue-600 tracking-tight uppercase">
+                       <span>Rewards Used</span>
+                       <span>- ₹{pointsDiscount}</span>
+                     </div>
+                   )}
+                   {walletDiscount > 0 && (
+                     <div className="flex justify-between text-[9px] sm:text-xs md:text-sm font-bold text-orange-600 tracking-tight uppercase">
+                       <span>Wallet Used</span>
+                       <span>- ₹{walletDiscount}</span>
+                     </div>
+                   )}
                    <div className="flex justify-between text-[9px] sm:text-xs md:text-sm font-bold text-gray-400 tracking-tight uppercase pb-3 sm:pb-4 border-b border-dashed border-gray-100">
                       <span>Savings</span>
-                      <span>- ₹0</span>
+                      <span>- ₹{(discountAmount + pointsDiscount + walletDiscount).toFixed(2)}</span>
                    </div>
                    <div className="flex justify-between items-center pt-3 sm:pt-4">
                       <span className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</span>
-                      <span className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-black text-gray-900 tracking-tighter">₹{finalAmount}</span>
+                      <span className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-black text-gray-900 tracking-tighter">₹{finalAmount.toFixed(2)}</span>
                    </div>
                 </div>
 
@@ -482,7 +593,9 @@ const Cart = () => {
             subtotal: subtotal,
             taxAmount: taxAmount,
             platformFee: platformFee,
-            couponDiscount: discountAmount,
+            couponDiscount: discountAmount + pointsDiscount + walletDiscount,
+            pointsUsed: pointsDiscount * 10,
+            walletUsed: walletDiscount,
             userEmail: user?.email,
             userPhone: user?.phone,
           }}

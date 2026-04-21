@@ -421,3 +421,40 @@ export const verifyOTP = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+/**
+ * Adds balance to user wallet (rewards system)
+ */
+export const addWalletBalance = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const userId = req.user;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid amount" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Initialize walletBalance if not present
+    user.walletBalance = (user.walletBalance || 0) + amount;
+    
+    // Also grant some reward points for activity
+    user.rewardPoints = (user.rewardPoints || 0) + (amount * 5); 
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `₹${amount} added to your wallet!`,
+      walletBalance: user.walletBalance,
+      rewardPoints: user.rewardPoints
+    });
+  } catch (error) {
+    console.error("Wallet update error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

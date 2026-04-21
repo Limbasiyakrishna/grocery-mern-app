@@ -56,6 +56,8 @@ const PaymentGateway = ({ cartData, onPaymentSuccess, onClose }) => {
           subtotal: cartData.subtotal,
           taxValue: cartData.taxAmount,
           platformFee: cartData.platformFee,
+          pointsUsed: cartData.pointsUsed,
+          walletUsed: cartData.walletUsed,
         });
 
         if (data.success) {
@@ -87,6 +89,8 @@ const PaymentGateway = ({ cartData, onPaymentSuccess, onClose }) => {
           taxValue: cartData.taxAmount,
           platformFee: cartData.platformFee,
           paymentType: "RAZORPAY",
+          pointsUsed: cartData.pointsUsed,
+          walletUsed: cartData.walletUsed,
         });
 
         if (!orderData.success) {

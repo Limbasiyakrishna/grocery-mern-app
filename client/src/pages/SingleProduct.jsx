@@ -152,8 +152,33 @@ const SingleProduct = () => {
             </div>
           </div>
 
-           {/* Action Buttons (Moved up like Blinkit) */}
-           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-10">
+          {/* Subscribe & Save Option */}
+          <div className="mb-6 bg-white border-2 border-emerald-500 rounded-2xl p-4 sm:p-5 relative shadow-lg shadow-emerald-500/5 group cursor-pointer transition-all hover:bg-emerald-50/30">
+            <div className="absolute -top-3 right-4 bg-emerald-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md">Best Value</div>
+            <div className="flex items-start gap-4">
+               <div className="w-5 h-5 mt-1 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
+                  <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+               </div>
+               <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h3 className="font-black text-gray-900 text-sm sm:text-base">Subscribe & Save</h3>
+                    <span className="text-emerald-600 font-black text-lg">₹{(product.offerPrice * 0.9).toFixed(2)}</span>
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-3">Get 10% Extra OFF + Daily Morning Delivery</p>
+                  
+                  <div className="flex gap-2">
+                    {['Daily', 'Weekly', 'Alt Days'].map((freq) => (
+                      <button key={freq} className="text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-600 hover:text-white transition-all">
+                        {freq}
+                      </button>
+                    ))}
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          {/* Action Buttons (Moved up like Blinkit) */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-10">
             <button
                onClick={() => addToCart(product._id)}
                className="group flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl py-3 sm:py-4 text-sm sm:text-base font-black uppercase tracking-widest shadow-xl shadow-emerald-900/10 flex items-center justify-center gap-2 active:scale-95 transition-all animate-pulse-glow"
@@ -235,25 +260,66 @@ const SingleProduct = () => {
                   </div>
                 ))}
              </div>
+
+             {/* Freshness Gauge */}
+             <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Current Freshness</p>
+                  <p className="text-sm font-black text-gray-900 leading-none">Peak Harvest Level</p>
+                </div>
+                <div className="flex gap-1.5 items-end">
+                  {[1,2,3,4,5].map((i) => (
+                    <div key={i} className={`w-1.5 rounded-full transition-all duration-1000 ${i <= 4 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] h-6' : 'bg-gray-100 h-4'}`} style={{ transitionDelay: `${i * 100}ms` }} />
+                  ))}
+                  <span className="ml-2 text-xs font-black text-emerald-600">92%</span>
+                </div>
+             </div>
           </div>
 
           {/* Safe Checkout Badge */}
-          <div className="flex items-center justify-center gap-4 sm:gap-8 py-3 sm:py-4 bg-gray-50/50 rounded-xl sm:rounded-2xl border border-dashed border-gray-200">
-            <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-              <span className="text-base sm:text-xl">🛡️</span>
-              <span className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-tighter">100% Secure</span>
+          </div>
+
+          {/* ⭐ Customer Reviews */}
+          <div className="mt-12 sm:mt-16 border-t border-gray-100 pt-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+               <div>
+                  <h3 className="text-xl md:text-3xl font-black text-gray-900 uppercase tracking-tighter">Customer <span className="text-emerald-600">Reviews</span></h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex text-yellow-500">
+                      {Array(5).fill("").map((_, i) => <span key={i} className="text-lg">★</span>)}
+                    </div>
+                    <span className="text-sm font-bold text-gray-400 font-bold">(4.0 / 5.0)</span>
+                  </div>
+               </div>
+               <button className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-emerald-600 transition-all active:scale-95">
+                 Write a Review
+               </button>
             </div>
-            <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-              <span className="text-base sm:text-xl">🌿</span>
-              <span className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-tighter">Farm Fresh</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-              <span className="text-base sm:text-xl">↩️</span>
-              <span className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-tighter">Easy Return</span>
+
+            <div className="space-y-6">
+               {[
+                 { user: "Sarah J.", date: "2 days ago", comment: "Super fresh! The quality is amazing, definitely worth the price.", rating: 5 },
+                 { user: "Mike R.", date: "1 week ago", comment: "Good quality, but delivery was slightly delayed. Overall happy.", rating: 4 }
+               ].map((rev, i) => (
+                 <div key={i} className="bg-white p-6 rounded-3xl border border-gray-50 flex gap-4 hover:shadow-lg transition-all group">
+                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-black flex-shrink-0 text-xl group-hover:scale-110 transition-transform shadow-inner">
+                      {rev.user[0]}
+                    </div>
+                    <div className="flex-1">
+                       <div className="flex justify-between items-center mb-1">
+                          <h4 className="font-black text-gray-900">{rev.user}</h4>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{rev.date}</span>
+                       </div>
+                       <div className="flex text-yellow-400 text-xs mb-2">
+                          {Array(5).fill("").map((_, j) => <span key={j}>{j < rev.rating ? "★" : "☆"}</span>)}
+                       </div>
+                       <p className="text-sm text-gray-500 font-medium italic">"{rev.comment}"</p>
+                    </div>
+                 </div>
+               ))}
             </div>
           </div>
         </div>
-      </div>
 
       {/* ⭐ Related Products */}
       {relatedProducts.length > 0 && (
@@ -263,7 +329,7 @@ const SingleProduct = () => {
               Explore More
             </span>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight">
-              Related Products
+              Freshnest <span className="text-emerald-600 italic">AI</span> Suggestions
             </h2>
           </div>
 

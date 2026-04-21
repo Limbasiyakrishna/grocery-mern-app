@@ -133,6 +133,12 @@ export const placeOrderCOD = async (req, res) => {
       isPaid: false,
     });
 
+    // Award reward points (1 point for every ₹100 spent)
+    const pointsAwarded = Math.floor(finalAmount / 100);
+    if (pointsAwarded > 0) {
+      await User.findByIdAndUpdate(userId, { $inc: { rewardPoints: pointsAwarded } });
+    }
+
     // Send order confirmation notifications asynchronously (non-blocking)
     (async () => {
       try {

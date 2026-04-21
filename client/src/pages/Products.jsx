@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import ProductCard from "../components/ProductCard";
 import { useAppContext } from "../context/AppContext";
 import { categories } from "../assets/assets";
+import { getImgSrc } from "../utils/imgResolver";
 
 const Products = () => {
   const { products, searchQuery, setSearchQuery } = useAppContext();
@@ -71,9 +72,12 @@ const Products = () => {
                         <button 
                            key={i}
                            onClick={() => { setActiveCategory(cat.path); setSidebarOpen(false); }}
-                           className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl font-black text-xs sm:text-sm transition-all ${activeCategory === cat.path ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600"}`}
+                           className={`w-full flex items-center gap-3 text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl font-black text-xs sm:text-sm transition-all ${activeCategory === cat.path ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600"}`}
                         >
-                           {cat.text}
+                           <div className={`w-6 h-6 rounded-lg flex items-center justify-center p-0.5 ${activeCategory === cat.path ? "bg-white/20" : "bg-gray-50"}`}>
+                              <img src={getImgSrc(cat.image)} className="w-full h-full object-contain mix-blend-multiply" alt="" />
+                           </div>
+                           <span className="truncate">{cat.text}</span>
                         </button>
                     ))}
                 </div>

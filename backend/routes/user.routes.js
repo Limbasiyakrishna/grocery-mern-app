@@ -8,6 +8,7 @@ import {
   resetPassword,
   sendOTP,
   verifyOTP,
+  addWalletBalance,
 } from "../controller/user.controller.js";
 import authUser from "../middlewares/authUser.js";
 const router = express.Router();
@@ -21,5 +22,6 @@ router.post("/reset-password", resetPassword);
 // OTP Login Routes
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
+router.post("/update-wallet", authUser, addWalletBalance);
 
 export default router;

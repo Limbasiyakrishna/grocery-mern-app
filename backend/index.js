@@ -19,6 +19,7 @@ import orderRoutes from "./routes/order.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import couponRoutes from "./routes/coupon.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import blogRoutes from "./routes/blog.routes.js";
 
 // Connect to external services (env already loaded above)
 await connectDB();
@@ -67,6 +68,7 @@ app.use("/api/order", orderRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/coupon", couponRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/blog", blogRoutes);
 
 // Email health endpoint
 app.get("/api/email-status", (req, res) => {

@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema(
     // Password reset fields
     resetToken: { type: String, default: null },
     resetTokenExpiry: { type: Date, default: null },
+    rewardPoints: { type: Number, default: 0 },
+    walletBalance: { type: Number, default: 0 },
   },
   { minimize: false }
 );

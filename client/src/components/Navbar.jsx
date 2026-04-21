@@ -31,6 +31,8 @@ const Navbar = () => {
     setSearchQuery,
     cartCount,
     axios,
+    isDarkMode,
+    toggleTheme
   } = useAppContext();
 
   const logout = async () => {
@@ -196,6 +198,35 @@ const Navbar = () => {
               type="text"
               placeholder="Search..."
             />
+            {/* Voice Search Button */}
+            <button 
+                title="Voice Search"
+                onClick={() => {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (!SpeechRecognition) {
+                        toast.error("Voice search is not supported in this browser.");
+                        return;
+                    }
+                    const recognition = new SpeechRecognition();
+                    recognition.lang = 'en-US';
+                    recognition.start();
+                    toast('Listening...', { icon: '🎙️' });
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setSearchQuery(transcript);
+                        if (location.pathname !== "/products") navigate("/products");
+                        toast.success(`Searching for: ${transcript}`);
+                    };
+                    recognition.onerror = () => {
+                        toast.error("Voice recognition failed. Please try again.");
+                    };
+                }}
+                className="p-1 hover:bg-emerald-100 rounded-full transition-colors text-gray-400 hover:text-emerald-600"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+            </button>
             <svg
               className="w-4 h-4 text-gray-400 group-hover:text-emerald-500 transition-colors"
               fill="none"
@@ -222,6 +253,17 @@ const Navbar = () => {
 
       {/* Cart & Profile Icons */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4 relative ml-auto sm:ml-2">
+        <div 
+           onClick={toggleTheme}
+           className="hidden sm:flex relative cursor-pointer items-center justify-center h-9 sm:h-10 w-9 sm:w-10 bg-gray-50 text-gray-700 rounded-2xl border border-gray-100/50 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-100 transition-all active:scale-95 group"
+        >
+          {isDarkMode ? (
+            <svg className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-500 animate-spin-slow" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" /></svg>
+          ) : (
+            <svg className="w-4 sm:w-5 h-4 sm:h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
+          )}
+        </div>
+
         <div 
            onClick={() => {
              if (window.innerWidth > 640) {
@@ -258,8 +300,15 @@ const Navbar = () => {
           {user && (
             <div className="hidden group-hover:block absolute top-full right-0 pt-3 z-50">
               <ul className="bg-white/95 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl py-3 w-40 sm:w-44 animate-in fade-in slide-in-from-top-4">
+                <li className="px-4 py-3 mx-2 mb-2 rounded-xl bg-orange-50 border border-orange-100 flex flex-col gap-0.5">
+                   <p className="text-[8px] font-black uppercase text-orange-600 tracking-[0.2em]">Wallet Balance</p>
+                   <p className="text-sm font-black text-slate-800">₹{user.walletBalance || 0}</p>
+                </li>
                 <li onClick={() => navigate("/my-orders")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
                   Orders History
+                </li>
+                <li onClick={() => navigate("/refer-earn")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
+                  Refer & Earn
                 </li>
                 <li onClick={() => navigate("/add-address")} className="px-4 py-2 mx-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-xs sm:text-sm font-black cursor-pointer">
                   My Addresses

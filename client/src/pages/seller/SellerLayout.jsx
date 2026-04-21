@@ -54,6 +54,17 @@ const SellerLayout = () => {
         </svg>
       ),
     },
+    {
+      name: "Manage Blogs",
+      path: "/seller/blogs",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 2v4h4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h10M7 16h10" />
+        </svg>
+      ),
+    },
   ];
 
   const logout = async () => {
